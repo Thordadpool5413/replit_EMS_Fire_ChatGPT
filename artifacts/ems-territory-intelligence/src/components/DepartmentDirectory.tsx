@@ -1,3 +1,5 @@
+import { loadCountyPracticeLocations } from '../services/countyPracticeLocations';
+import { providerProfileHref } from '../navigation/providerProfileUrl';
 import {coverageLabels,loadDepartmentCoverage,type Coverage} from '../services/departmentCoverage';
 import { workspaceFactsFor } from '../services/matchedWorkspaceFacts';
 import { useMemo, useState } from 'react';
@@ -188,6 +190,41 @@ function CoverageDetails({state,county}:{state:string;county:string}){
     <><p>All departments with a recorded location or documented service agreement in this {county?'county':'state'}. Figures count profiles with a published record.</p><dl className="pr-metrics">{Object.entries(coverageLabels).map(([key,label])=><div key={key}><dt>{label}</dt><dd>{(counts?.[key as keyof Coverage]??0).toLocaleString()}</dd></div>)}</dl></>)}</details>;
 }
 
+function CountyPracticeAddresses({ state, county, city, search }: { state: string; county: string; city: string; search: string }) {
+  const [open, setOpen] = useState(false);
+  const query = useQuery({
+    queryKey: ['county-nppes-practice', state],
+    queryFn: () => loadCountyPracticeLocations(state),
+    staleTime: Infinity,
+    retry: false,
+  });
+  const rows = query.data?.[county] ?? [];
+  if (query.isSuccess && !rows.length) return null;
+  const terms = search.trim().toLowerCase().split(/\s+/);
+  const matches = rows.filter((row) => {
+    const text = [row.name, row.npi, row.address].join(' ').toLowerCase();
+    return (!city || row.city.toLowerCase() === city.toLowerCase()) && terms.every((term) => text.includes(term));
+  });
+  return (
+    <details className="dd-archive" onToggle={(event) => setOpen(event.currentTarget.open)}>
+      <summary>Additional NPPES practice addresses{rows.length ? ' (' + rows.length + ')' : ''}</summary>
+      {open && <>
+        <p>CMS-reported addresses with an approximate Census county match. A practice address can belong to an organization based in another state.</p>
+        {query.isPending && <p role="status">Loading practice addresses…</p>}
+        {query.isError && <button type="button" onClick={() => void query.refetch()}>Retry practice addresses</button>}
+        {query.isSuccess && !matches.length && <p>No practice addresses match the search.</p>}
+        <ul>
+          {matches.map((row) => <li key={row.key} className="pr-source-tile">
+            <a className="pr-source-link" href={providerProfileHref(row.record) + '#stations'}>{row.name}</a>
+            <p>{row.address}</p>
+            <small>CMS NPPES · NPI {row.npi} · {row.reportingPeriod}{row.record.state !== state ? ' · Parent profile in ' + row.record.state : ''}</small>
+          </li>)}
+        </ul>
+      </>}
+    </details>
+  );
+}
+
 export function AreaDepartmentDirectory({
   state,
   county,
@@ -245,6 +282,8 @@ export function AreaDepartmentDirectory({
             </button>
           ))}
       </div>
+      {county && (selected === 'all' || selected === 'ems') &&
+        <CountyPracticeAddresses state={state} county={county} city={city} search={query} />}
       {selected === 'stations' ? (
         <CountyNerisStationDirectory
           stateCode={state}

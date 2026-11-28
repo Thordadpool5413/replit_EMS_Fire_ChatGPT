@@ -1,3 +1,4 @@
+import { nycFireProcurement } from './nycFireProcurement';
 import {departmentCouncilRecords} from './departmentCouncilRecords';
 import fireBillingIdentities from './fireBillingIdentityMatches.json';
 import { interstateProviderEvidence } from './interstateProviderEvidence';
@@ -511,6 +512,7 @@ export const providerProfileEvidence = [
   },
   {
     registryKey: 'FDID:NY:31000', registryName: 'Fire Department City of New York (FDNY)', combinedServices: true,
+    ...nycFireProcurement,
     publicAwardRecipients: ['City of New York', 'New York City'],
   },
   ...publicDepartmentLeadership,

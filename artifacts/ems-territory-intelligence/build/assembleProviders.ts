@@ -1,3 +1,7 @@
+import type { CountyPracticeLocation } from '../src/services/countyPracticeLocations';
+import { loadAllMonthlySecondaryRows } from '../src/services/nppesMonthlySecondary';
+import { joinMonthlyGeocodes, loadAllMonthlyGeocodeRows } from '../src/services/nppesMonthlyGeocode';
+import { addressText } from '../src/services/providerLocationContract';
 import { countDepartment, emptyCoverage, type Coverage } from '../src/services/departmentCoverage';
 import { departmentAwards } from './departmentAwards';
 import { loadNerisMapState } from '../src/services/nerisStationMap';
@@ -63,16 +67,44 @@ async function publishSnapshot(name: string, payload: string) {
 const readArchive = async (filename: string) =>
   gunzipSync(await readFile(new URL('./data/' + filename + '.json.gz', import.meta.url))).toString();
 const nfirs = JSON.parse(await readArchive('nfirs-2024')) as Record<string, Record<string, [number, number]>>;
-await Promise.all(Array.from({ length: 10 }, async (_, digit) => {
+const emergencyServiceCodes = new Set(['A0427', 'A0429', 'A0430', 'A0431', 'A0433']);
+const cmsAmbulanceOperators = new Map<string, string[]>();
+for (let digit = 0; digit < 10; digit++) {
   const name = 'medicare-2024-' + digit;
-  await publishSnapshot(name + '.json', await readArchive(name));
-}));
+  const data = await readArchive(name);
+  await publishSnapshot(name + '.json', data);
+  const edition = JSON.parse(data) as { providers: Record<string, [string, string, string, string, [string, string, number, number | null][]]> };
+  for (const [npi, [, , state, providerType, rows]] of Object.entries(edition.providers)) {
+    if (providerType !== 'Ambulance Service Provider') continue;
+    if (!rows.some(([code, , , units]) => emergencyServiceCodes.has(code) && units !== null && units > 0)) continue;
+    const operators = cmsAmbulanceOperators.get(state) ?? [];
+    operators.push(npi);
+    cmsAmbulanceOperators.set(state, operators);
+  }
+}
 const zctaCounty = JSON.parse(await readArchive('single-county-zcta')) as Record<string, string>;
 const censusCounties = JSON.parse(await readFile(new URL('../../../scripts/fixtures/census-2026-county-identities.json', import.meta.url), 'utf8')) as {
   counties: { GEOID: string; USPS: string }[];
 };
 const censusCountyState = new Map(censusCounties.counties.map(({ GEOID, USPS }) => [GEOID, USPS]));
 const manifest = await loadSourceDirectoryManifest();
+const [secondaryRows, allPracticeGeocodes] = await Promise.all([
+  loadAllMonthlySecondaryRows(),
+  loadAllMonthlyGeocodeRows(),
+]);
+function groupByNpi<T extends { parentNpi: string }>(rows: T[]) {
+  const result = new Map<string, T[]>();
+  for (const row of rows) {
+    const values = result.get(row.parentNpi) ?? [];
+    values.push(row);
+    result.set(row.parentNpi, values);
+  }
+  return result;
+}
+const practicesByNpi = groupByNpi(secondaryRows);
+const coordinatesByNpi = groupByNpi(allPracticeGeocodes);
+const countyPracticeLocations = new Map<string, CountyPracticeLocation[]>();
+const linkedPracticeRows = new Set<string>();
 const allContacts = await archivedContacts();
 const siteArchive = await historicSites();
 const counts = {
@@ -92,6 +124,9 @@ const counts = {
   countyAssigned: 0,
   countyFromZcta: 0,
   noCountyDirectory: 0,
+  secondaryPracticeRows: 0,
+  secondaryPracticeCountyRows: 0,
+  secondaryPracticeProfiles: 0,
   mappedLocations: 0,
   staffing: 0,
   agencyEvidence: 0,
@@ -99,6 +134,7 @@ const counts = {
 const counties = new Set<string>();
 type Member = { ref: ProviderProfileRef; profile: PublicProviderProfile };
 for (const state of Object.keys(manifest.byState).sort()) {
+  await publishSnapshot('ambulance-operators-' + state + '.json', JSON.stringify(cmsAmbulanceOperators.get(state) ?? []));
   const [registry, neris, locations] = await Promise.all([
     loadSourceDirectoryState(state),
     loadNerisStateCatalog(state),
@@ -175,6 +211,31 @@ for (const state of Object.keys(manifest.byState).sort()) {
     assert.ok(main, 'Missing canonical account ' + url);
     const p = main.profile,
       key = profileSourceKey(ref);
+    let linkedPractices = 0;
+    for (const member of members) {
+      if (!member.ref.id.startsWith('nppes:')) continue;
+      const npi = member.ref.id.slice(6);
+      const sourceRows = practicesByNpi.get(npi) ?? [];
+      const geocodes = joinMonthlyGeocodes(npi, sourceRows, coordinatesByNpi.get(npi) ?? []);
+      const indexedRows = new Map(geocodes.map((row) => [row.sourceKey, row]));
+      for (const row of sourceRows) {
+        assert.equal(row.parentState, state, 'NPPES location edition parent state mismatch');
+        assert.ok(!linkedPracticeRows.has(row.sourceKey), 'Duplicate NPPES parent location link');
+        linkedPracticeRows.add(row.sourceKey);
+        linkedPractices++;
+        const county = indexedRows.get(row.sourceKey)?.censusCountyAsReported;
+        if (!county || !manifest.countyNames[county] || censusCountyState.get(county) !== row.address.state) continue;
+        const locations = countyPracticeLocations.get(county) ?? [];
+        locations.push({
+          key: row.sourceKey, record: ref, name: p.name, npi: npi,
+          address: addressText(row.address), city: row.address.city, reportingPeriod: row.parentSourceDate,
+        });
+        countyPracticeLocations.set(county, locations);
+        counts.secondaryPracticeCountyRows++;
+      }
+    }
+    counts.secondaryPracticeRows += linkedPractices;
+    if (linkedPractices) counts.secondaryPracticeProfiles++;
     const evidence = findProviderEvidenceByConfirmedKeys([key]);
     let hasPhone = false;
     for (const m of members) {
@@ -341,5 +402,11 @@ for (const state of Object.keys(manifest.byState).sort()) {
   counts.states++;
   counts.sourceRoutes += refs.length;
   counts.profiles += rows.length;
+}
+for (const state of Object.keys(manifest.byState)) {
+  const locations = Object.fromEntries(
+    [...countyPracticeLocations].filter(([county]) => censusCountyState.get(county) === state),
+  );
+  await publishSnapshot('practices-' + state + '.json', JSON.stringify(locations));
 }
 console.log('Validated department directory', JSON.stringify({ ...counts, counties: counties.size }));

@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import React,{useEffect,useRef,useState} from 'react';
 import type {Agency} from '../../types';
 import {profileCmsLookupNpi} from '../../services/cmsAmbulanceEvidence';
@@ -34,38 +35,40 @@ function StoredSecondaryPoint({evidence}:{evidence?:MonthlyGeocodeRow}){
  <p>Federal Census source · November 26, 2026 UTC. End-user validation required.</p>
  </div>;
 }
-function MonthlyLocations({npi,agency}:{npi:string;agency:Agency}){
- const [rows,setRows]=useState<MonthlySecondaryRow[]|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
- const [geocodes,setGeocodes]=useState<MonthlyGeocodeRow[]>([]),[geoError,setGeoError]=useState('');
- const active=useRef(true);
- useEffect(()=>{active.current=true;return()=>{active.current=false}},[]);
- async function load(){
-  setBusy(true);setError('');
-  setGeoError('');setGeocodes([]);
-  try{
-   const result=await loadMonthlySecondary(npi);if(!active.current)return;setRows(result.rows);
-   if(result.rows.length){
-    try{const points=await loadMonthlySecondaryGeocodes(npi,result.rows);if(active.current)setGeocodes(points);}
-    catch{if(active.current)setGeoError('Stored geographic evidence unavailable. Live address lookup is still available.');}
-   }
-  }
-  catch{if(active.current)setError('Monthly federal location evidence unavailable. Live NPPES lookup is still available.');}
-  finally{if(active.current)setBusy(false);}
- }
+export function MonthlyLocations({ npi, profileState, autoLoad = false }: { npi: string; profileState: string; autoLoad?: boolean }) {
+ const [requested, setRequested] = useState(autoLoad);
+ const query = useQuery({
+   queryKey: ['monthly-nppes-other-practice', npi],
+   enabled: requested,
+   staleTime: Infinity,
+   retry: false,
+   queryFn: () => loadMonthlySecondary(npi),
+ });
+ const rows = query.data?.rows;
+ const geometry = useQuery({
+   queryKey: ['monthly-nppes-other-practice-geocode', npi],
+   enabled: !!rows?.length,
+   staleTime: Infinity,
+   retry: false,
+   queryFn: () => loadMonthlySecondaryGeocodes(npi, rows ?? []),
+ });
+ const geocodes = geometry.data ?? [];
+ const busy = requested && query.isPending;
+ if (autoLoad && rows?.length === 0) return null;
  return <section className="my-2 border rounded p-2 min-w-0 text-sm" data-testid="nppes-monthly-secondary">
  <h4 className="font-semibold">November 2026 federal secondary addresses</h4>
  <p>Monthly CMS release, independent of state licensing records. Additional practice locations are not confirmed stations.</p>
- <button className="workspace-button min-h-11" type="button" disabled={busy} onClick={()=>void load()}>{busy?'Loading monthly addresses…':rows?'Reload monthly addresses':'Show monthly secondary addresses'}</button>
- {error&&<p role="alert">{error}</p>}
- {geoError&&<p role="status" className="text-xs">{geoError}</p>}
+ <button className="workspace-button min-h-11" type="button" disabled={busy} onClick={()=>requested ? void query.refetch() : setRequested(true)}>{busy?'Loading monthly addresses…':rows?'Reload monthly addresses':query.isError?'Retry monthly addresses':'Show monthly secondary addresses'}</button>
+ {query.isError&&<p role="alert">Monthly NPPES address records are unavailable.</p>}
+ {geometry.isError&&<p role="status" className="text-xs">Stored Census address matches are unavailable.</p>}
  {rows&&<><p role="status">{rows.length} additional address {rows.length===1?'row':'rows'} in this scoped snapshot. {rows.length===0?'No listing is not proof of no additional sites.':''}</p>
  <p><a className="underline" href="https://download.cms.gov/nppes/NPI_Files.html" target="_blank" rel="noreferrer">Official CMS monthly reference file</a> · November 9, 2026 release.</p>
  {rows.length>0&&<p>Source organization: {rows[0].parentName} · NPI {npi}. Confirm the operating relationship before use.</p>}
  {geocodes.length>0&&<p className="text-xs">{geocodes.filter(g=>g.sourceGeometry).length} approximate Census address matches in this provider's monthly records. Not confirmed stations.</p>}
- <ul className="divide-y">{rows.map(r=><li key={r.sourceKey} className="py-2"><p className="text-xs">Source row {r.sourceRow}{r.sharedAddressAcrossNpis?' · Address shared across NPIs; not a merged agency':''}</p><ul><LocationRow row={{key:r.sourceKey,kind:'secondary-practice',address:r.address,physicalStreet:true,stationIdentityEstablished:false,endUserValidationRequired:true}} profileState={agency.stateCode}/></ul><StoredSecondaryPoint evidence={geocodes.find(g=>g.sourceKey===r.sourceKey)}/></li>)}</ul></>}
+ <ul className="divide-y">{rows.map(r=><li key={r.sourceKey} className="py-2"><p className="text-xs">Source row {r.sourceRow}{r.sharedAddressAcrossNpis?' · Address shared across NPIs; not a merged agency':''}</p><ul><LocationRow row={{key:r.sourceKey,kind:'secondary-practice',address:r.address,physicalStreet:true,stationIdentityEstablished:false,endUserValidationRequired:true}} profileState={profileState}/></ul><StoredSecondaryPoint evidence={geocodes.find(g=>g.sourceKey===r.sourceKey)}/></li>)}</ul></>}
  </section>;
 }
-export function NppesPracticeLocationsPanel({agency}:{agency:Agency}){
+export function NppesPracticeLocationsPanel({agency, showMonthly = true}:{agency:Agency; showMonthly?: boolean}){
  const npi=profileCmsLookupNpi(agency).npi;
  const [data,setData]=useState<NppesPracticeEvidence|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[version,setVersion]=useState(0);
  const request=useRef<AbortController|null>(null);
@@ -81,7 +84,7 @@ export function NppesPracticeLocationsPanel({agency}:{agency:Agency}){
  return <details className="acp-address-note min-w-0" data-testid="nppes-practice-locations"><summary className="cursor-pointer font-semibold">Federal NPI practice and mailing locations</summary>
  <p className="my-2">CMS NPPES organization NPI {npi}. No state licensing lookup required. Source-reported addresses are not confirmed operating stations or saved profile locations.</p>
  <button type="button" className="workspace-button min-h-11" disabled={busy} onClick={()=>void load()}>{busy?'Loading…':current?'Refresh federal addresses':'Pull federal addresses'}</button>
- <MonthlyLocations key={agency.id+':'+npi} npi={npi} agency={agency}/>
+ {showMonthly && <MonthlyLocations key={agency.id+':'+npi} npi={npi} profileState={agency.stateCode}/>}
  {error&&<p role="alert">{error}</p>}
  {current&&<><p><a className="underline" href={current.sourceUrl} target="_blank" rel="noreferrer">Official NPPES record</a> · Retrieved {current.retrievedAt.slice(0,10)} UTC{current.sourceDate?' · Registry updated '+current.sourceDate:''}.</p>
  {current.status!=='source-reported'?<p>No eligible active ambulance organization record returned for this NPI. No site inferred.</p>:<><p className="font-semibold">{current.organizationName}</p><p>Secondary practice collection: {current.secondaryCollection==='reported'?'returned by CMS':'not returned; completeness unknown'}. {current.withheldAddressCount?current.withheldAddressCount+' duplicate, conflicting or unsupported address entries withheld.':''}</p>

@@ -1,6 +1,6 @@
 import { loadNpiDetails } from './providerRegistryDetails';
 import { departmentKey, isCombinedDepartment } from './departmentIdentity';
-import { hasProviderServiceName } from './providerServiceName';
+import { hasProviderServiceName, unrelatedProviderName } from './providerServiceName';
 /** Read-only source listings. Never coerce registry organizations into Agency metrics. */
 export interface SourceDirectoryCounts {usfa:number;nppes:number;assigned:number;unassigned:number;countiesWithRecords:number;countyCount:number}
 export interface CountySourceListingCounts { total: number; usfa: number; nppes: number }
@@ -23,6 +23,27 @@ export function loadSourceDirectoryManifest():Promise<SourceDirectoryManifest>{
  })().catch(error=>{manifestPromise=undefined;throw error;});
  return manifestPromise;
 }
+function businessOperatorName(name: string) {
+ return !unrelatedProviderName(name)
+  && !/\b(?:health\s*care systems?|health networks?|city|town|township|village|county|state government|borough|parish|government|commissioners?|municipality|medical examiner|public health|auditor|fire|firefighters?)\b/i.test(name);
+}
+
+async function retainedAmbulanceOperators(state: string) {
+ const response = await fetch((import.meta.env?.BASE_URL ?? '/') + 'data/providers/ambulance-operators-' + state + '.json', {
+  signal: AbortSignal.timeout(20000),
+ });
+ if (!response.ok) throw Error('Original Medicare ambulance identity snapshot unavailable.');
+ const ids: unknown = await response.json();
+ if (!Array.isArray(ids) || ids.some(id => typeof id !== 'string' || !/^\d{10}$/.test(id))) {
+  throw Error('Invalid ambulance operator snapshot');
+ }
+ return new Set<string>(ids);
+}
+
+export function isTransportBillingOperator(name: string, npi: string, active: boolean, ambulanceTaxonomy: boolean, matchingNpis: ReadonlySet<string>) {
+ return active && ambulanceTaxonomy && matchingNpis.has(npi) && businessOperatorName(name);
+}
+
 export function loadSourceDirectoryState(state:string):Promise<SourceDirectoryRecord[]>{
  const existing=statePromises.get(state);if(existing)return existing;
  const pending=(async()=>{
@@ -40,8 +61,20 @@ export function loadSourceDirectoryState(state:string):Promise<SourceDirectoryRe
   for(const record of records)ids.add(record[0]);
   if(ids.size!==records.length)throw Error('Duplicate registry identities.');
   const needsOperatingNames = records.some(row=>row[1]==='NPPES' && !hasProviderServiceName(row[2]) && !departmentKey(state,'NPI:'+row[0].slice(6)));
-  const billingNames = needsOperatingNames ? await loadNpiDetails(state) : undefined;
-  return records.filter(row => row[1] === 'USFA' || hasProviderServiceName(row[2]) || hasProviderServiceName(billingNames?.get(row[0].slice(6))?.alternateName ?? '') || !!departmentKey(state, 'NPI:' + row[0].slice(6)));
+  const [billingNames, ambulanceOperators] = needsOperatingNames
+   ? await Promise.all([loadNpiDetails(state), retainedAmbulanceOperators(state).catch(() => new Set<string>())])
+   : [undefined, new Set<string>()];
+
+  return records.filter(row => {
+   if (row[1] === 'USFA' || hasProviderServiceName(row[2])) return true;
+   const npi = row[0].slice(6);
+   const billing = billingNames?.get(npi);
+   if (hasProviderServiceName(billing?.alternateName ?? '') || departmentKey(state, 'NPI:' + npi)) return true;
+   if (!billing) return false;
+   const active = !billing.deactivationDate || (!!billing.reactivationDate &&
+     Date.parse(billing.reactivationDate) > Date.parse(billing.deactivationDate));
+   return isTransportBillingOperator(row[2], npi, active, billing.taxonomies.some(code => code.startsWith('3416')), ambulanceOperators);
+  });
  })().catch(error=>{statePromises.delete(state);throw error;});
  statePromises.set(state,pending);return pending;
 }

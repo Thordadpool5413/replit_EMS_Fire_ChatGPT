@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {countSourceListingsByCounty,filterSourceDirectory,loadSourceDirectoryManifest,loadSourceDirectoryState,type SourceDirectoryRecord} from './nationalSourceDirectory';
+import {isTransportBillingOperator,countSourceListingsByCounty,filterSourceDirectory,loadSourceDirectoryManifest,loadSourceDirectoryState,type SourceDirectoryRecord} from './nationalSourceDirectory';
 const fire:SourceDirectoryRecord=['usfa:FL:123','USFA','Example Fire','FL','Miami','33101','12086','Miami-Dade','source-county','','123 Main',''];
 const npi:SourceDirectoryRecord=['nppes:1234567890','NPPES','Example Ambulance','FL','Miami','33101','','','unassigned','01/01/2025','','https://npiregistry.cms.hhs.gov/provider-view/1234567890'];
 const countyNpi:SourceDirectoryRecord=['nppes:1234567891','NPPES','County Ambulance','FL','Miami','33101','12086','','census-address-range','','200 Main','https://npiregistry.cms.hhs.gov/provider-view/1234567891'];
@@ -35,4 +35,18 @@ test('county screenshots distinguish operating services from billing parents', a
  const {hasProviderServiceName}=await import('./providerServiceName');
  for(const name of ['Shands Teaching Hospital and Clinics Inc','Rocky Mountain Holdings LLC','Coastal Health Systems of Brevard','Holmes Regional Medical Center','City of Titusville']) assert.equal(hasProviderServiceName(name),false,name);
  for(const name of ['Titusville Fire and Emergency Services','East Coast Ambulance LLC','Gainesville Fire Rescue','Brevard County Fire Rescue']) assert.equal(hasProviderServiceName(name),true,name);
+});
+
+test('exact same-state billing evidence restores active ambulance organizations while withholding parent entities', () => {
+ const npi = '1003006180';
+ const matchedNpis = new Set([npi]);
+ assert.equal(isTransportBillingOperator('PHI Health LLC', npi, true, true, matchedNpis), true);
+ assert.equal(isTransportBillingOperator('Community Hospital', npi, true, true, matchedNpis), false);
+ assert.equal(isTransportBillingOperator('County of Orange', npi, true, true, matchedNpis), false);
+ assert.equal(isTransportBillingOperator('Example City Clerk', npi, true, true, matchedNpis), false);
+ assert.equal(isTransportBillingOperator('Example Healthcare System', npi, true, true, matchedNpis), false);
+ assert.equal(isTransportBillingOperator('Example Volunteer Fire', npi, true, true, matchedNpis), false);
+ assert.equal(isTransportBillingOperator('PHI Health LLC', npi, false, true, matchedNpis), false);
+ assert.equal(isTransportBillingOperator('PHI Health LLC', npi, true, false, matchedNpis), false);
+ assert.equal(isTransportBillingOperator('PHI Health LLC', '1616000000', true, true, matchedNpis), false);
 });

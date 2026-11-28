@@ -1,3 +1,4 @@
+import { TexasLinkedLocations } from './TexasHistoricalLocationEvidence';
 import { loadDepartmentBrief } from '../../services/departmentBrief';
 import { DepartmentAwardLedger } from './DepartmentAwardLedger';
 import { StationContactHistory } from './StationContactHistory';
@@ -30,7 +31,7 @@ import combinedArt from '../../assets/provider-station-art.webp';
 import fireArt from '../../assets/provider-fire-art.webp';
 import emsArt from '../../assets/provider-ems-art.webp';
 import { CmsAmbulanceEvidencePanel } from './CmsAmbulanceEvidencePanel';
-import { NppesPracticeLocationsPanel } from './NppesPracticeLocationsPanel';
+import { MonthlyLocations, NppesPracticeLocationsPanel } from './NppesPracticeLocationsPanel';
 import { ProviderEquipmentFunding, ProviderSourceLink } from './ProviderEquipmentFunding';
 import { ProviderFootprint } from './ProviderFootprint';
 import { ProviderCallBrief } from './ProviderCallBrief';
@@ -334,8 +335,12 @@ export default function ProviderRecord({ reference }: { reference: string }) {
           {section === 'grants' && <ProviderGrants state={profile.stateCode} name={evidence?.registryName ?? profile.name} evidence={evidence} />}
           {section === 'people' && <>{ref && <DepartmentContacts record={ref}/>}<ProviderPeople evidence={evidence} />{[...floridaLicenses].map(license=><FloridaProviderContacts key={license} license={license} />)}{ref && <StationContactHistory record={ref}/>}</>}
           {section === 'stations' && <>{ref && <StationContactHistory record={ref}/>}<ProviderStations profile={profile} evidence={evidence} />
+            {ref?.state === 'TX' && <TexasLinkedLocations parentKeys={
+              [profileSourceKey(ref), ...departmentAliases(ref.state, profileSourceKey(ref))].filter((key) => key.startsWith('TX-DSHS:license:'))
+            } />}
+            {brief.data?.payments.map(({ npi }) => <MonthlyLocations key={npi} npi={npi} profileState={profile.stateCode} autoLoad />)}
             {profile.identity?.sourceName === 'NPPES' && canCreateRegistryAccount(profile.identity) &&
-              <NppesPracticeLocationsPanel agency={createSourceNativeAgency(profile.identity, [])} />}</>}
+              <NppesPracticeLocationsPanel agency={createSourceNativeAgency(profile.identity, [])} showMonthly={false} />}</>}
           {section === 'claims' && <>{brief.data && <DepartmentPayments data={brief.data} />}<Claims profile={profile} evidence={evidence} /></>}
           {section === 'quality' && <><Quality evidence={evidence} />{profile.countyFips === '53033' && <KingCountyOutcome />}</>}
           {section === 'operations' && <Operations profile={profile} evidence={evidence} />}

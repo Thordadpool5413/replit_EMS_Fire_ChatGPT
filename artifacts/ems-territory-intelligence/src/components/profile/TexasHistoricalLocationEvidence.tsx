@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import React,{useEffect,useState} from 'react';
 import type {Agency} from '../../types';
 import {loadTexasLocationCatalog,texasLocationProfileCandidates,type TexasLocationCandidate,type TexasLocationCatalog} from '../../services/texasLocationReview';
@@ -18,4 +19,21 @@ export function TexasProfileLocationEvidence({agency,directory}:{agency:Agency;d
  if(agency.stateCode!=='TX'||!agency.registryIdentity)return null;
  if(failed)return <p className="text-xs">Texas historical location evidence unavailable. <button type="button" className="underline" onClick={()=>setAttempt(x=>x+1)}>Retry</button></p>;
  return catalog?<HistoricalLocations rows={texasLocationProfileCandidates(agency,directory,catalog)} sourceUrl={catalog.sourceUrl} comparison/>:null;
+}
+
+export function TexasLinkedLocations({ parentKeys }: { parentKeys: string[] }) {
+ const query = useQuery({
+  queryKey: ['texas-archived-provider-locations'],
+  queryFn: loadTexasLocationCatalog,
+  enabled: parentKeys.length > 0,
+  staleTime: Infinity,
+  retry: false,
+ });
+ if (query.isError) return <button type="button" className="pr-source-link" onClick={() => void query.refetch()}>Retry Texas historical locations</button>;
+ if (!query.data) return null;
+ const parentSet = new Set(parentKeys);
+ return <HistoricalLocations
+  rows={query.data.candidates.filter((candidate) => parentSet.has(candidate.parentReviewKey))}
+  sourceUrl={query.data.sourceUrl}
+ />;
 }

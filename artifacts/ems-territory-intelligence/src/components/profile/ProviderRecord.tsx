@@ -313,7 +313,6 @@ export default function ProviderRecord({ reference }: { reference: string }) {
       {section === 'equipment' ? <div className="pr-detail-wrap">
         {(timelineEvidence?.equipment?.length || timelineEvidence?.funding?.length) ? <ProviderStory key={reference} evidence={timelineEvidence} nerisId={stationId}/> : null}
         {ref && <DepartmentAwardLedger record={ref}/>}
-        {ref && <DepartmentAwardLedger record={ref} />}
         <ProviderEquipmentFunding evidence={evidence}>
           <ProviderPurchasing registryKey={evidence?.registryKey ?? profile.registryKey} />
           <RegionalAedSources state={profile.stateCode} county={profile.countyFips} nerisId={stationId} profile />

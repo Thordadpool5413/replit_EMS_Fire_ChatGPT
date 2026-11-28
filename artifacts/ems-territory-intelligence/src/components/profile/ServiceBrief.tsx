@@ -135,13 +135,14 @@ function PaymentChart({ npi, years }: { npi: string; years: Record<string, [numb
         Medicaid &amp; CHIP claim lines
       </figcaption>
       <ol className="db-annual">
-        {rows.map(([year, [lines]]) => (
+        {rows.map(([year, [lines, paidCents]]) => (
           <li key={year}>
             <span>{lines.toLocaleString()}</span>
             <div>
               <i style={{ height: (lines / peak) * 100 + '%' }} />
             </div>
             <small>{year}</small>
+            <small>{(paidCents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })} paid</small>
           </li>
         ))}
       </ol>

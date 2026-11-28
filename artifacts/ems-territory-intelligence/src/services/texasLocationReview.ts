@@ -1,6 +1,6 @@
 import type {Agency} from '../types';
 import {registryIdentityKey,registryClaimIndex,canCreateRegistryAccount} from './registryAccountLink';
-import {loadTexasReviewRoster,type TexasReviewCatalog} from './texasEmsReviewRoster';
+import {loadRawTexasReviewRoster,type TexasReviewCatalog} from './texasEmsReviewRoster';
 const rosterHash='d249639d7a6a19d1c41e895ebab11d8b6fdd2a7dc0ee263d008b1894388ee34c';
 const url='https://services3.arcgis.com/vljlarU2635mITsl/arcgis/rest/services/EMS_Provider_Station_Locations_September_2025/FeatureServer/6';
 const artifactHash='731e0df30443604a1434ee4f22a071ad892878f0133f7d85191092be7f0c0a2b';
@@ -43,7 +43,7 @@ export function loadTexasLocationCatalog():Promise<TexasLocationCatalog>{
   const raw=await fetch(base+idx.file,{cache:'no-cache',signal:AbortSignal.timeout(30000)}).then(r=>{if(!r.ok)throw Error('Historical Texas location catalog unavailable');return r.text()});
   const h=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(raw)))].map(b=>b.toString(16).padStart(2,'0')).join('');
   if(h!==idx.sha256)throw Error('Texas historical location integrity check failed');
-  return validateTexasLocationCatalog(JSON.parse(raw),await loadTexasReviewRoster());
+  return validateTexasLocationCatalog(JSON.parse(raw),await loadRawTexasReviewRoster());
  })().catch(e=>{pending=undefined;throw e});
  return pending;
 }

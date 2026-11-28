@@ -44,7 +44,7 @@ export function validateTexasReviewCatalog(value:unknown):TexasReviewCatalog {
  return a;
 }
 let pending:Promise<TexasReviewCatalog>|undefined;
-export function loadTexasReviewRoster():Promise<TexasReviewCatalog>{
+export function loadRawTexasReviewRoster():Promise<TexasReviewCatalog>{
  if(!pending)pending=(async()=>{
   const base=(import.meta.env?.BASE_URL??'/')+'registry/state-ems-review/';
   const idx=await fetch(base+'TX-index.json',{cache:'no-cache',signal:AbortSignal.timeout(30000)}).then(r=>{if(!r.ok)throw Error('Texas source index unavailable');return r.json()});
@@ -52,7 +52,12 @@ export function loadTexasReviewRoster():Promise<TexasReviewCatalog>{
   const data=await fetch(base+idx.file,{cache:'no-cache',signal:AbortSignal.timeout(30000)}).then(r=>{if(!r.ok)throw Error('Texas source roster unavailable');return r.text()});
   const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(data)))].map(b=>b.toString(16).padStart(2,'0')).join('');
   if(hash!==idx.sha256)throw Error('Texas source roster integrity check failed');
-  const roster = validateTexasReviewCatalog(JSON.parse(data)); return {...roster, records: roster.records.filter(row => !!texasServiceName(row))};
+  return validateTexasReviewCatalog(JSON.parse(data));
  })().catch(e=>{pending=undefined;throw e});
  return pending;
+}
+
+export async function loadTexasReviewRoster(): Promise<TexasReviewCatalog> {
+ const roster = await loadRawTexasReviewRoster();
+ return { ...roster, records: roster.records.filter((row) => !!texasServiceName(row)) };
 }

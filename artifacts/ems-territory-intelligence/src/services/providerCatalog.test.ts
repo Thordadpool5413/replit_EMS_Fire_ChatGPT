@@ -1,4 +1,4 @@
-import { savedDepartmentRef } from './matchedWorkspaceFacts';
+import { matchedWorkspaceAgency, savedDepartmentRef } from './matchedWorkspaceFacts';
 import type { Agency } from '../types';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -99,4 +99,21 @@ test('statewide county review includes only profiles without either a recorded c
   };
   assert.deepEqual(filterProviders([row, withServiceArea], { category: 'all', unassignedOnly: true }), [row]);
   assert.deepEqual(filterProviders([row, withServiceArea], { category: 'ems', countyFips: '51610' }), [withServiceArea]);
+});
+
+test('private records resolve to one saved account on both fire and EMS routes', () => {
+  const source = { state: 'FL', source: 'state-ems', id: '518' } as const;
+  const cocoa = {
+    id: 'cocoa',
+    stateCode: 'FL',
+    registryIdentity: {
+      sourceName: 'State EMS', identifierKind: 'license', identifier: '518', stateCode: 'FL',
+    },
+    sourceRecordAssociations: [],
+  } as unknown as Agency;
+  assert.equal(matchedWorkspaceAgency(source, [cocoa]), cocoa);
+  assert.equal(matchedWorkspaceAgency(departmentProfile(source), [cocoa]), cocoa);
+  assert.equal(matchedWorkspaceAgency(source, [cocoa, { ...cocoa, id: 'second-cocoa' }]), undefined);
+  assert.equal(matchedWorkspaceAgency(source, [{ ...cocoa, stateCode: 'TX' }]), undefined);
+  assert.equal(matchedWorkspaceAgency(source, [{ ...cocoa, dataProvenanceTier: 'generated_prospect' }]), undefined);
 });

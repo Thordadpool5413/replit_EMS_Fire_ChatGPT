@@ -217,7 +217,7 @@ function CountyPracticeAddresses({ state, county, city, search }: { state: strin
           {matches.map((row) => <li key={row.key} className="pr-source-tile">
             <a className="pr-source-link" href={providerProfileHref(row.record) + '#stations'}>{row.name}</a>
             <p>{row.address}</p>
-            <small>CMS NPPES · NPI {row.npi} · {row.reportingPeriod}{row.record.state !== state ? ' · Parent profile in ' + row.record.state : ''}</small>
+            <small>CMS NPPES · NPI {row.npi} · {row.reportingPeriod}{row.countyBasis ? ' · ' + row.countyBasis : ''}{row.record.state !== state ? ' · Parent profile in ' + row.record.state : ''}</small>
           </li>)}
         </ul>
       </>}

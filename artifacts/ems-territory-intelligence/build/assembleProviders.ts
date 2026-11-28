@@ -126,6 +126,7 @@ const counts = {
   noCountyDirectory: 0,
   secondaryPracticeRows: 0,
   secondaryPracticeCountyRows: 0,
+  secondaryPracticeCountyFromZcta: 0,
   secondaryPracticeProfiles: 0,
   mappedLocations: 0,
   staffing: 0,
@@ -223,13 +224,18 @@ for (const state of Object.keys(manifest.byState).sort()) {
         assert.ok(!linkedPracticeRows.has(row.sourceKey), 'Duplicate NPPES parent location link');
         linkedPracticeRows.add(row.sourceKey);
         linkedPractices++;
-        const county = indexedRows.get(row.sourceKey)?.censusCountyAsReported;
+        const addressCounty = indexedRows.get(row.sourceKey)?.censusCountyAsReported;
+        const zipCounty = zctaCounty[row.address.zip?.slice(0, 5) ?? ''];
+        const county = addressCounty ?? zipCounty;
         if (!county || !manifest.countyNames[county] || censusCountyState.get(county) !== row.address.state) continue;
+        const countyBasis = addressCounty ? 'Census street-range match' : 'Census 2020 ZIP area';
         const locations = countyPracticeLocations.get(county) ?? [];
         locations.push({
-          key: row.sourceKey, record: ref, name: p.name, npi: npi,
+          key: row.sourceKey, record: ref, name: p.name, npi,
           address: addressText(row.address), city: row.address.city, reportingPeriod: row.parentSourceDate,
+          countyBasis,
         });
+        if (!addressCounty) counts.secondaryPracticeCountyFromZcta++;
         countyPracticeLocations.set(county, locations);
         counts.secondaryPracticeCountyRows++;
       }

@@ -12,20 +12,23 @@ const kinds = {
   operations: 'operations',
   workflow: 'people',
 } as const;
-export function workspaceFactsFor(ref: ProviderProfileRef, agencies: Agency[]): BriefFact[] {
-  const canonical = departmentProfile(ref),
-    key = profileSourceKey(canonical);
+export function matchedWorkspaceAgency(ref: ProviderProfileRef, agencies: Agency[]): Agency | undefined {
+  const canonical = departmentProfile(ref);
+  const key = profileSourceKey(canonical);
   const keys = new Set([key, ...departmentAliases(ref.state, key)]);
-  const matched = agencies.filter(
-    (a) =>
-      a.stateCode === ref.state &&
-      a.dataProvenanceTier !== 'generated_prospect' &&
-      registryClaims(a).keys.some((k) => keys.has(k)),
+  const matched = agencies.filter((agency) =>
+    agency.stateCode === ref.state &&
+    agency.dataProvenanceTier !== 'generated_prospect' &&
+    registryClaims(agency).keys.some((claim) => keys.has(claim)),
   );
-  if (matched.length !== 1) return [];
-  const agency = matched[0],
-    claims = registryClaims(agency);
-  if (claims.invalid.length || claims.conflicts.length) return [];
+  if (matched.length !== 1) return;
+  const target = savedDepartmentRef(matched[0]);
+  return target && profileSourceKey(target) === key ? matched[0] : undefined;
+}
+
+export function workspaceFactsFor(ref: ProviderProfileRef, agencies: Agency[]): BriefFact[] {
+  const agency = matchedWorkspaceAgency(ref, agencies);
+  if (!agency) return [];
   return Object.entries(buildProviderCardFacts(undefined, agency)).flatMap(([group, rows]) =>
     rows.map((row) => ({
       kind: kinds[group as keyof typeof kinds] as FactKind,

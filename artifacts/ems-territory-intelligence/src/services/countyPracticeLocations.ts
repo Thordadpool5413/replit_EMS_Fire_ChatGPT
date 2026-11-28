@@ -8,6 +8,7 @@ export type CountyPracticeLocation = {
   address: string;
   city: string;
   reportingPeriod: string;
+  countyBasis?: 'Census street-range match' | 'Census 2020 ZIP area';
 };
 
 export async function loadCountyPracticeLocations(state: string) {

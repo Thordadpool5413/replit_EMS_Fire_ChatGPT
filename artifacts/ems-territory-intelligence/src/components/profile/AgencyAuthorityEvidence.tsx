@@ -6,10 +6,10 @@ type Row={submissionId:string;observation:Observation;decision:'accepted'|'rejec
 type Data={identity:string;rows:Row[];withheld:number;more:boolean;canWrite:boolean};
 const blank=():Observation=>({name:'',title:'',organization:'',role:'other',scope:'',observedOn:'',basis:'official-document',sourceUrl:'',description:''});
 const control='block w-full min-w-0 rounded border p-2 text-base bg-transparent';
-export function AgencyAuthorityEvidence({agencyId,autoLoad=false}:{agencyId:string;autoLoad?:boolean}){
- const {user}=useAuth();return user?<PrivateAuthority key={user.id+':'+agencyId} agencyId={agencyId} autoLoad={autoLoad}/>:null;
+export function AgencyAuthorityEvidence({agencyId,autoLoad=false,readOnly=false}:{agencyId:string;autoLoad?:boolean;readOnly?:boolean}){
+ const {user}=useAuth();return user?<PrivateAuthority key={user.id+':'+agencyId} agencyId={agencyId} autoLoad={autoLoad} readOnly={readOnly}/>:null;
 }
-function PrivateAuthority({agencyId,autoLoad}:{agencyId:string;autoLoad:boolean}){
+function PrivateAuthority({agencyId,autoLoad,readOnly}:{agencyId:string;autoLoad:boolean;readOnly:boolean}){
  const [open,setOpen]=useState(false),[data,setData]=useState<Data>(),[draft,setDraft]=useState(blank),[busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[filter,setFilter]=useState('all'),[reviewId,setReviewId]=useState(''),[rationale,setRationale]=useState(''),[attest,setAttest]=useState(false);
  useEffect(()=>{
   if(!autoLoad)return;
@@ -57,10 +57,10 @@ function PrivateAuthority({agencyId,autoLoad}:{agencyId:string;autoLoad:boolean}
     {data.more&&<p>Latest 100 observations only; not a complete directory.</p>}
     {!rows.length&&<p>No matching observations. Authority remains unknown.</p>}
     <ul className="divide-y">{rows.map(r=><li key={r.submissionId} className="py-2 space-y-1 break-words"><p className="font-semibold">{r.observation.name} · {r.observation.title}</p><p>{r.observation.organization} · {roles[r.observation.role]}</p><p>Scope: {r.observation.scope}</p><p className="text-xs">{r.observation.observedOn} · {r.decision==='accepted'?'Reviewed dated claim':r.decision==='rejected'?'Rejected':'Awaiting independent review'} · {r.observation.basis==='official-document'?'Official document submitted':'Agency confirmation reported'}</p><p>{r.observation.description}</p>{r.observation.sourceUrl&&<a className="underline" href={r.observation.sourceUrl} target="_blank" rel="noopener noreferrer">Submitted source</a>}{r.reviewNote&&<p>Review: {r.reviewNote}</p>}
-     {r.canReview&&<button type="button" className="workspace-button min-h-11" disabled={busy} onClick={()=>{setReviewId(r.submissionId);setRationale('');setAttest(false);}}>Review claim</button>}
-     {r.canReview&&reviewId===r.submissionId&&<div className="space-y-2"><label>Review rationale<textarea className={control} maxLength={1000} value={rationale} onChange={e=>setRationale(e.target.value)}/></label><label className="flex gap-2 items-start"><input type="checkbox" checked={attest} onChange={e=>setAttest(e.target.checked)}/>I independently checked the person, organization, stated responsibility and evidence scope.</label><div className="flex flex-wrap gap-2">{(['accepted','rejected'] as const).map(d=><button key={d} type="button" className="workspace-button min-h-11" disabled={busy||!attest||!rationale.trim()} onClick={()=>void review(d)}>{d==='accepted'?'Accept dated claim':'Reject claim'}</button>)}</div></div>}
+     {!readOnly && r.canReview&&<button type="button" className="workspace-button min-h-11" disabled={busy} onClick={()=>{setReviewId(r.submissionId);setRationale('');setAttest(false);}}>Review claim</button>}
+     {!readOnly && r.canReview&&reviewId===r.submissionId&&<div className="space-y-2"><label>Review rationale<textarea className={control} maxLength={1000} value={rationale} onChange={e=>setRationale(e.target.value)}/></label><label className="flex gap-2 items-start"><input type="checkbox" checked={attest} onChange={e=>setAttest(e.target.checked)}/>I independently checked the person, organization, stated responsibility and evidence scope.</label><div className="flex flex-wrap gap-2">{(['accepted','rejected'] as const).map(d=><button key={d} type="button" className="workspace-button min-h-11" disabled={busy||!attest||!rationale.trim()} onClick={()=>void review(d)}>{d==='accepted'?'Accept dated claim':'Reject claim'}</button>)}</div></div>}
     </li>)}</ul>
-    {data.canWrite&&<form className="border-t pt-2 space-y-2" onSubmit={e=>{e.preventDefault();void save();}}>
+    {!readOnly && data.canWrite&&<form className="border-t pt-2 space-y-2" onSubmit={e=>{e.preventDefault();void save();}}>
      <h3 className="font-semibold">Record authority evidence</h3>
      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
       {([['name','Professional name',160],['title','Reported title',200],['organization','Employing / purchasing organization',240],['scope','Documented decision scope',240]] as const).map(([k,label,max])=><label key={k}>{label}<input className={control} required maxLength={max} value={draft[k]} onChange={e=>change(k,e.target.value)}/></label>)}

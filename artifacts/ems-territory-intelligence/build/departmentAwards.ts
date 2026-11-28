@@ -29,7 +29,6 @@ const texasGrantEditions: StateGrantEdition[] = JSON.parse(
 );
 function texasRecipientKey(recipient: string, county: string) {
   const name = normalized(recipient)
-    .replace(/\bvfd\b/g, 'volunteer fire department')
     .replace(/\s+(?:inc|incorporated|llc)$/, '');
   return name + '|' + normalized(county.replace(/ County$/i, ''));
 }
@@ -48,6 +47,11 @@ function normalized(name: string) {
     .replace(/&/g, ' and ')
     .replace(/[^a-z0-9 ]/g, ' ')
     .replace(/\bdept\b/g, 'department')
+    .replace(/\bv\s*f\s*d\b/g, 'volunteer fire department')
+    .replace(/\bfire\s+dist\b/g, 'fire district')
+    .replace(/\bfire\s+co\b/g, 'fire company')
+    .replace(/\bfire\s+pro(?:t|tection)?\s+dist(?:rict)?\b/g, 'fire protection district')
+    .replace(/\s+(?:incorporated|inc)(?=\s*$)/, '')
     .replace(/\bvol\b/g, 'volunteer')
     .replace(/\s+/g, ' ')
     .trim();

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@workspace/replit-auth-web';
 import { ClipboardList, PackageCheck, Receipt } from 'lucide-react';
 import {
@@ -30,11 +30,13 @@ async function request<T>(path: string, body?: object): Promise<T> {
   return result as T;
 }
 
-export function ProviderSourceWorkspace({ agencyId, kind }: { agencyId: string; kind: ProviderSourceKind }) {
+export function ProviderSourceWorkspace({
+  agencyId, kind, readOnly = false,
+}: { agencyId: string; kind: ProviderSourceKind; readOnly?: boolean }) {
   const { user } = useAuth();
-  return user ? <PrivateSourceWorkspace key={[user.id, agencyId, kind].join(':')} agencyId={agencyId} kind={kind} /> : null;
+  return user ? <PrivateSourceWorkspace key={[user.id, agencyId, kind].join(':')} agencyId={agencyId} kind={kind} readOnly={readOnly} /> : null;
 }
-function PrivateSourceWorkspace({ agencyId, kind }: { agencyId: string; kind: ProviderSourceKind }) {
+function PrivateSourceWorkspace({ agencyId, kind, readOnly }: { agencyId: string; kind: ProviderSourceKind; readOnly: boolean }) {
   const path = '/api/agencies/' + encodeURIComponent(agencyId) + '/source-snapshots/' + kind;
   const [workspace, setWorkspace] = useState<Workspace>();
   const [history, setHistory] = useState<Report>();
@@ -47,7 +49,7 @@ function PrivateSourceWorkspace({ agencyId, kind }: { agencyId: string; kind: Pr
   const [busy, setBusy] = useState(false);
   const { title, icon: Icon, help } = headings[kind];
 
-  async function load() {
+  const load = useCallback(async () => {
     setBusy(true);
     setMessage('');
     setDraft(undefined);
@@ -56,7 +58,8 @@ function PrivateSourceWorkspace({ agencyId, kind }: { agencyId: string; kind: Pr
     try { setWorkspace(await request<Workspace>(path)); }
     catch (error) { setMessage(error instanceof Error ? error.message : 'Provider source records could not be loaded.'); }
     finally { setBusy(false); }
-  }
+  }, [path]);
+  useEffect(() => { if (readOnly) void load(); }, [load, readOnly]);
   async function readHistory(revision: number) {
     if (!workspace || revision < 1) return;
     setBusy(true);
@@ -102,11 +105,13 @@ function PrivateSourceWorkspace({ agencyId, kind }: { agencyId: string; kind: Pr
   const template = 'data:text/csv;charset=utf-8,' + encodeURIComponent(providerSourceHeadings[kind].join(',') + '\n');
   const categories = kind === 'billing' ? payerCategories : equipmentCategories;
   const providesDenials = kind === 'billing' && draft?.rows.some(row => row.initial !== null || row.final !== null);
-  return <details className="pr-panel" onToggle={event => {
-    if (event.target === event.currentTarget && event.currentTarget.open && !busy) void load();
+  const Panel = readOnly ? 'section' : 'details';
+  const Heading = readOnly ? 'h2' : 'summary';
+  return <Panel className="pr-panel" onToggle={event => {
+    if (!readOnly && event.target === event.currentTarget && event.currentTarget instanceof HTMLDetailsElement && event.currentTarget.open && !busy) void load();
   }}>
-    <summary className="font-semibold"><Icon size={17} aria-hidden="true" /> {title}</summary>
-    <p>{help}</p>
+    <Heading className="pr-icon-heading font-semibold"><Icon size={17} aria-hidden="true" /> {title}</Heading>
+    {!readOnly && <p>{help}</p>}
     {busy && <p role="status">Working with private provider records…</p>}
     {message && <p role="status">{message}</p>}
     {!busy && <button type="button" className="pr-source-link" onClick={() => void load()}>Refresh saved records</button>}
@@ -127,7 +132,7 @@ function PrivateSourceWorkspace({ agencyId, kind }: { agencyId: string; kind: Pr
           <button className="pr-source-link" type="button" disabled={busy} onClick={() => setHistory(undefined)}>Close revision history</button>
         </section>}
       </> : <p>No records have been saved to this profile for this category.</p>}
-      {workspace.canWrite && <details>
+      {!readOnly && workspace.canWrite && <details>
         <summary>Import an authorized {kind === 'billing' ? 'billing' : 'agency'} CSV</summary>
         <a href={template} download={kind + '-provider-template.csv'} className="pr-source-link">Download exact CSV template</a>
         <p>{kind === 'billing' ? 'Payers' : 'Equipment categories'} · {categories.join(', ')}</p>
@@ -161,7 +166,7 @@ function PrivateSourceWorkspace({ agencyId, kind }: { agencyId: string; kind: Pr
         </>}
       </details>}
     </>}
-  </details>;
+  </Panel>;
 }
 
 function SourceTable({ kind, rows, label }: { kind: ProviderSourceKind; rows: ProviderSourceRow[]; label: string }) {

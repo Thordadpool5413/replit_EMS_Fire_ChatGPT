@@ -5,8 +5,8 @@ import {loadSourceDirectoryManifest} from '../../services/nationalSourceDirector
 import { DepartmentContacts } from './DepartmentContacts';
 import { WorkspaceDepartmentFacts } from './WorkspaceDepartmentFacts';
 import { loadProviderCatalog } from '../../services/providerCatalog';
-import { profileSourceKey } from '../../services/departmentIdentity';
-import { ServiceBrief, DepartmentSourceFields } from './ServiceBrief';
+import { departmentKey, profileSourceKey } from '../../services/departmentIdentity';
+import { ServiceBrief, DepartmentSourceFields, DepartmentPayments } from './ServiceBrief';
 import { departmentAliases, isCombinedDepartment } from '../../services/departmentIdentity';
 import { ProviderChanges } from './ProviderChanges';
 import { DiscoveryCoach } from './DiscoveryCoach';
@@ -84,7 +84,7 @@ function SourceSummary({ profile }: { profile: PublicProviderProfile }) {
 function Operations({ profile, evidence }: { profile: PublicProviderProfile; evidence?: ProviderEvidence }) {
   const metrics = evidence?.operations ?? [];
   const identity = profile.identity;
-  const usfaKey = evidence?.registryKey ?? (identity?.sourceName === 'USFA NFDR' ? profile.registryKey : undefined);
+  const usfaKey = departmentKey(profile.stateCode, profile.registryKey) ?? (identity?.sourceName === 'USFA NFDR' ? profile.registryKey : undefined);
   const usfa = useQuery({
     queryKey: ['usfa-profile-operations', profile.stateCode, usfaKey],
     queryFn: () => usfaKey ? loadUsfaProfileOperations(profile.stateCode, usfaKey) : null,
@@ -246,7 +246,10 @@ export default function ProviderRecord({ reference }: { reference: string }) {
   },[query.data,row,geography.data]);
   const brief=useQuery({queryKey:['department-brief',ref?.state,ref?.source,ref?.id],enabled:!!ref,queryFn:()=>loadDepartmentBrief(ref!),staleTime:15*60000});
   const timelineEvidence=brief.data?.evidence;
-  const evidence = profile ? (findProviderEvidence(profile.registryKey, profile.name) ?? (ref && findProviderEvidenceByConfirmedKeys([profileSourceKey(ref)]))) : undefined;
+  const directEvidence = profile ? (findProviderEvidence(profile.registryKey, profile.name) ?? (ref && findProviderEvidenceByConfirmedKeys([profileSourceKey(ref)]))) : undefined;
+  const evidence = timelineEvidence && directEvidence
+    ? { ...directEvidence, ...timelineEvidence, funding: [...new Set([...(directEvidence.funding ?? []), ...(timelineEvidence.funding ?? [])])] }
+    : timelineEvidence ?? directEvidence;
   const floridaLicenses = new Set<string>();
   if (profile?.stateCode === 'FL') {
     if (profile.identity?.sourceName === 'State EMS') floridaLicenses.add(profile.identity.identifier);
@@ -329,7 +332,7 @@ export default function ProviderRecord({ reference }: { reference: string }) {
           {section === 'stations' && <>{ref && <StationContactHistory record={ref}/>}<ProviderStations profile={profile} evidence={evidence} />
             {profile.identity?.sourceName === 'NPPES' && canCreateRegistryAccount(profile.identity) &&
               <NppesPracticeLocationsPanel agency={createSourceNativeAgency(profile.identity, [])} />}</>}
-          {section === 'claims' && <Claims profile={profile} evidence={evidence} />}
+          {section === 'claims' && <>{brief.data && <DepartmentPayments data={brief.data} />}<Claims profile={profile} evidence={evidence} /></>}
           {section === 'quality' && <><Quality evidence={evidence} />{profile.countyFips === '53033' && <KingCountyOutcome />}</>}
           {section === 'operations' && <Operations profile={profile} evidence={evidence} />}
           {section === 'sources' && <>{ref && <DepartmentSourceFields record={ref}/>}<Sources profile={profile} evidence={evidence}/><InlineAgencyRecords state={profile.stateCode} registryKey={profile.registryKey} evidence={evidence}/><ProviderEvidenceStatus evidence={evidence}/></>}

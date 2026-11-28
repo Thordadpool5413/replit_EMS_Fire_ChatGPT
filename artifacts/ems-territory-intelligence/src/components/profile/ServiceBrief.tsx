@@ -73,6 +73,12 @@ const priority: FactKind[] = [
   'identity',
 ];
 
+const topicNames: Record<FactKind, string> = {
+  equipment: 'Equipment', funding: 'Funding', quality: 'Clinical outcomes', operations: 'Operations',
+  stations: 'Stations', staff: 'Staffing', service: 'Service capabilities', people: 'Contacts',
+  claims: 'Billing and claims', license: 'Licensing', identity: 'Registry identifiers',
+};
+
 function selectFacts(facts: BriefFact[]) {
   return priority.flatMap((kind) => facts.find((f) => f.kind === kind) ?? []);
 }
@@ -143,6 +149,14 @@ function PaymentChart({ npi, years }: { npi: string; years: Record<string, [numb
     </figure>
   );
 }
+export function DepartmentPayments({ data }: { data: Awaited<ReturnType<typeof loadDepartmentBrief>> }) {
+  const payments = data.payments.filter((p) => p.years && Object.keys(p.years).length);
+  if (!payments.length) return null;
+  return <div className="db-visuals">{payments.map((p) =>
+    <PaymentChart key={p.npi} npi={p.npi} years={p.years!} />
+  )}</div>;
+}
+
 function FactTile({ fact, href }: { fact: BriefFact; href: string }) {
   const Icon = symbols[fact.kind];
   return (
@@ -258,6 +272,22 @@ export function ServiceBrief({
           {data.payments.map((p) => p.years && <PaymentChart key={p.npi} npi={p.npi} years={p.years} />)}
         </div>
       )}
+      {overview && (data?.facts.length || workspaceFacts.length) ? (
+        <section className="pr-panel db-source-fields">
+          <h2 className="pr-icon-heading"><ClipboardList size={20} /> Department records by topic</h2>
+          {priority.map((kind) => {
+            const rows = [...(data?.facts ?? []), ...workspaceFacts].filter((f) => f.kind === kind);
+            if (!rows.length) return null;
+            const Icon = symbols[kind];
+            return <details key={kind}>
+              <summary><Icon size={16} aria-hidden="true" /> {topicNames[kind]} ({rows.length})</summary>
+              <dl>{rows.map((f, i) => <div key={i}>
+                <dt>{f.label}</dt><dd><strong>{f.value}</strong>{f.note && <p>{f.note}</p>}<small>{f.source}</small></dd>
+              </div>)}</dl>
+            </details>;
+          })}
+        </section>
+      ) : null}
       {!overview && (
         <a className="db-open" href={href}>
           <span>{directoryRow?.address || 'View department profile'}</span>

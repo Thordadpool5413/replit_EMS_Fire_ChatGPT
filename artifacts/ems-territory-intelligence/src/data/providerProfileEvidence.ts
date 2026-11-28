@@ -1,3 +1,4 @@
+import {departmentCouncilRecords} from './departmentCouncilRecords';
 import fireBillingIdentities from './fireBillingIdentityMatches.json';
 import { interstateProviderEvidence } from './interstateProviderEvidence';
 import { centralFloridaEvidence } from './centralFloridaEvidence';
@@ -8,6 +9,7 @@ import { expandedProviderRecords } from './providerSourceExpansion';
 import { publicDepartmentLeadership } from './providerLeadership';
 
 export type ProviderEvidenceSource = {
+  excerpt?: string;
   label: string;
   date: string;
   url: string;
@@ -523,6 +525,7 @@ export const providerProfileEvidence = [
       basis: 'Combined proposal amount for one monitor and three AEDs.', purchasingVehicle: 'TMP-9340', source: jolietPurchase,
     }],
   },
+  ...departmentCouncilRecords,
   ...expandedProviderRecords,
   ...municipalBillingRecords,
   ...providerDocumentRecords,

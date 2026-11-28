@@ -1,3 +1,4 @@
+import {coverageLabels,type Coverage} from '../services/departmentCoverage';
 import { workspaceFactsFor } from '../services/matchedWorkspaceFacts';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -178,6 +179,19 @@ export function DepartmentResults({
   );
 }
 
+function CoverageDetails({state,county}:{state:string;county:string}){
+  const [open,setOpen]=useState(false);
+  const edition=useQuery({queryKey:['department-coverage',state],enabled:open,staleTime:Infinity,queryFn:async()=>{
+    const r=await fetch(import.meta.env.BASE_URL+'data/providers/coverage-'+state+'.json');
+    if(!r.ok)throw Error('Coverage unavailable');
+    return await r.json() as Record<string,Coverage>;
+  }});
+  const counts=edition.data?.[county||state];
+  return <details className="dd-archive" onToggle={e=>setOpen(e.currentTarget.open)}><summary>Department evidence coverage</summary>
+    {open && (edition.isPending?<p>Loading coverage…</p>:edition.isError?<button onClick={()=>void edition.refetch()}>Retry coverage</button>:
+    <><p>All departments with a recorded location in this {county?'county':'state'}. Figures count profiles with a published record.</p><dl className="pr-metrics">{Object.entries(coverageLabels).map(([key,label])=><div key={key}><dt>{label}</dt><dd>{(counts?.[key as keyof Coverage]??0).toLocaleString()}</dd></div>)}</dl></>)}</details>;
+}
+
 export function AreaDepartmentDirectory({
   state,
   county,
@@ -219,6 +233,7 @@ export function AreaDepartmentDirectory({
           />
         </label>
       </header>
+      <CoverageDetails state={state} county={county}/>
       <div className="dd-tabs" role="group" aria-label="Directory views">
         {tabs
           .filter((t) => (t.id === 'stations' ? !!county : category === 'all' || t.id === category))

@@ -26,9 +26,11 @@ const statusStyle = {
 } satisfies Record<EquipmentStatus | ProviderFundingEvidence['status'], { tone: string; icon: typeof HeartPulse }>;
 
 export function ProviderSourceLink({ source }: { source: ProviderEvidenceSource }) {
-  return <a className="pr-source-link" href={source.url} target="_blank" rel="noreferrer">
+  const link = <a className="pr-source-link" href={source.url} target="_blank" rel="noreferrer">
     {source.label} <span>· {source.date}</span>
   </a>;
+  if (!source.excerpt) return link;
+  return <details className="pr-evidence-excerpt"><summary>Supporting passage</summary><q>{source.excerpt}</q> {link}</details>;
 }
 
 

@@ -1,3 +1,4 @@
+import { DepartmentAwardLedger } from './profile/DepartmentAwardLedger';
 import { savedDepartmentRef } from '../services/matchedWorkspaceFacts';
 import { departmentAliases, profileSourceKey } from '../services/departmentIdentity';
 import { ServiceBrief, DepartmentSourceFields } from './profile/ServiceBrief';
@@ -1682,6 +1683,7 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
           )}
 
           {activeSection === 'overview' && department && <ServiceBrief record={department} name={agency.name} overview linkToPublicProfile/>}
+          {department && (activeSection==='purchasing' || activeSection==='evidence') && <DepartmentAwardLedger record={department} coverage={activeSection==='evidence'}/>}
           {activeSection === 'decision_makers' && department && <DepartmentContacts record={department}/>}
           {activeSection === 'operations' && department && <StationContactHistory record={department}/>}
           {activeSection === 'evidence' && department && <DepartmentSourceFields record={department}/>}

@@ -1,3 +1,5 @@
+import { countDepartment, type Coverage } from '../src/services/departmentCoverage';
+import { departmentAwards } from './departmentAwards';
 import { loadNerisMapState } from '../src/services/nerisStationMap';
 import { loadDepartmentBrief } from '../src/services/departmentBrief';
 import { historicSites, matchHistoricStations } from './stationHistory';
@@ -257,7 +259,14 @@ for (const state of Object.keys(manifest.byState).sort()) {
     );
     await writeFile(path.join(process.argv[2], 'contacts-' + state + '.json'), JSON.stringify(contacts));
   }
+  const awards = departmentAwards(state,rows);
+  const awardFile = 'awards-'+state+'.json';
+  const payload = JSON.stringify(awards);
+  generatedFiles.set('/data/providers/'+awardFile,payload);
+  if(process.argv[2]) await writeFile(path.join(process.argv[2],awardFile),payload);
+  console.log('Department award matches',state,JSON.stringify(awards.counters),Object.keys(awards.byProvider).length);
   generatedFiles.set('/data/providers/contacts-' + state + '.json', JSON.stringify(contacts));
+  const coverage:Record<string,Coverage>={};
   for (const row of rows) {
     const brief = await loadDepartmentBrief(row.ref);
     assert.deepEqual(brief.unavailable, [], 'Incomplete brief on ' + row.ref.id);
@@ -275,9 +284,13 @@ for (const state of Object.keys(manifest.byState).sort()) {
         counts[kind]++;
       }
     }
-    if (brief.facts.some((f) => f.kind === 'claims')) counts.medicaid++;
+    const medicaid=brief.payments.some(p=>p.years && Object.keys(p.years).length>0);
+    if (medicaid) counts.medicaid++;
+    for(const area of new Set([state,row.county,...(row.otherPlaces??[]).map(p=>p.county)].filter(Boolean)))
+      coverage[area]=countDepartment(coverage[area],brief.evidence,medicaid);
     counts.renderableBriefs++;
   }
+  if(process.argv[2]) await writeFile(path.join(process.argv[2],'coverage-'+state+'.json'),JSON.stringify(coverage));
   generatedFiles.delete('/data/providers/contacts-' + state + '.json');
   counts.states++;
   counts.sourceRoutes += refs.length;

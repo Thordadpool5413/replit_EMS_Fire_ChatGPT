@@ -1,3 +1,5 @@
+import { loadDepartmentBrief } from '../../services/departmentBrief';
+import { DepartmentAwardLedger } from './DepartmentAwardLedger';
 import { StationContactHistory } from './StationContactHistory';
 import {loadSourceDirectoryManifest} from '../../services/nationalSourceDirectory';
 import { DepartmentContacts } from './DepartmentContacts';
@@ -242,6 +244,8 @@ export default function ProviderRecord({ reference }: { reference: string }) {
     return {...p,countyFips:p.countyFips || row.county || undefined,county:p.county || geography.data?.countyNames[row.county],
       ...(!p.coordinates && row.point ? {coordinates:{latitude:row.point[0],longitude:row.point[1]},locationLabel:row.pointBasis,mappedAddress:row.pointAddress} : {})};
   },[query.data,row,geography.data]);
+  const brief=useQuery({queryKey:['department-brief',ref?.state,ref?.source,ref?.id],enabled:!!ref,queryFn:()=>loadDepartmentBrief(ref!),staleTime:15*60000});
+  const timelineEvidence=brief.data?.evidence;
   const evidence = profile ? (findProviderEvidence(profile.registryKey, profile.name) ?? (ref && findProviderEvidenceByConfirmedKeys([profileSourceKey(ref)]))) : undefined;
   const floridaLicenses = new Set<string>();
   if (profile?.stateCode === 'FL') {
@@ -304,10 +308,11 @@ export default function ProviderRecord({ reference }: { reference: string }) {
         </select>
       </div>
       {section === 'overview' && ref && <ServiceBrief record={ref} name={profile.name} location={profile.address ?? profile.city} category={row?.kind} serviceLevel={profile.identity?.serviceLevel} reportedStations={profile.reportedStationCount} reportDate={profile.source.date} overview/>}
-      {section === 'overview' && <ProviderChanges evidence={evidence}/>}
+      {section === 'overview' && <ProviderChanges evidence={timelineEvidence ?? evidence}/>}
       {ref && <WorkspaceDepartmentFacts record={ref} section={section}/>}
       {section === 'equipment' ? <div className="pr-detail-wrap">
-        {(evidence?.equipment?.length || evidence?.funding?.length) ? <ProviderStory key={reference} evidence={evidence} nerisId={stationId}/> : null}
+        {(timelineEvidence?.equipment?.length || timelineEvidence?.funding?.length) ? <ProviderStory key={reference} evidence={timelineEvidence} nerisId={stationId}/> : null}
+        {ref && <DepartmentAwardLedger record={ref}/>}
         <ProviderEquipmentFunding evidence={evidence}>
           <ProviderPurchasing registryKey={evidence?.registryKey ?? profile.registryKey} />
           <RegionalAedSources state={profile.stateCode} county={profile.countyFips} nerisId={stationId} profile />
@@ -318,6 +323,7 @@ export default function ProviderRecord({ reference }: { reference: string }) {
         <div className="pr-detail">
           {section === 'discovery' && <><ProfileGlance evidence={evidence}/><DiscoveryCoach identity={profile.identity} evidence={evidence} key={reference} agency={profile.name} /></>}
           {section === 'overview' && <>{evidence?.equipment?.length || evidence?.funding?.length ? <ProviderCallBrief evidence={evidence} /> : null}<Overview profile={profile} evidence={evidence} /></>}
+          {ref && (section==='equipment' || section==='grants' || section==='sources') && <DepartmentAwardLedger record={ref} coverage={section==='sources'}/>}
           {section === 'grants' && <ProviderGrants state={profile.stateCode} name={evidence?.registryName ?? profile.name} evidence={evidence} />}
           {section === 'people' && <>{ref && <DepartmentContacts record={ref}/>}<ProviderPeople evidence={evidence} />{[...floridaLicenses].map(license=><FloridaProviderContacts key={license} license={license} />)}{ref && <StationContactHistory record={ref}/>}</>}
           {section === 'stations' && <>{ref && <StationContactHistory record={ref}/>}<ProviderStations profile={profile} evidence={evidence} />

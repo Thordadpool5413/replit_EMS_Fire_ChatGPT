@@ -4,6 +4,7 @@ import {
   findProviderEvidenceByConfirmedKeys,
   linkedBillingOrganization,
   type DepartmentMetric,
+  type ProviderFundingEvidence,
 } from '../data/providerProfileEvidence';
 import { formatProviderMetric, providerEquipmentLabels } from './providerCardIntelligence';
 import { loadUsfaProfileOperations } from './usfaProfileOperations';
@@ -117,7 +118,7 @@ export async function loadDepartmentBrief(input: ProviderProfileRef) {
   const ref = departmentProfile(input),
     key = profileSourceKey(ref);
   const keys = [key, ...departmentAliases(ref.state, key)];
-  const evidence = findProviderEvidenceByConfirmedKeys(keys);
+  const localEvidence = findProviderEvidenceByConfirmedKeys(keys);
   const unavailable = new Set<string>();
   async function read<T>(label: string, task: Promise<T>): Promise<T | undefined> {
     try {
@@ -129,9 +130,9 @@ export async function loadDepartmentBrief(input: ProviderProfileRef) {
   }
   const refs = [ref, ...keys.slice(1).flatMap((k) => sourceRef(ref.state, k) ?? [])];
   const npis = new Set(keys.filter((k) => k.startsWith('NPI:')).map((k) => k.slice(4)));
-  const billingId = linkedBillingOrganization(key, evidence);
+  const billingId = linkedBillingOrganization(key, localEvidence);
   if (billingId) npis.add(billingId);
-  const [profiles, ops, contactEdition, payments, contactsByKey] = await Promise.all([
+  const [profiles, ops, contactEdition, payments, awardEdition, contactsByKey] = await Promise.all([
     Promise.all(refs.map((r) => read(r.source, loadPublicProviderProfile(r)))),
     key.startsWith('FDID:') ? read('USFA staffing', loadUsfaProfileOperations(ref.state, key)) : undefined,
     keys.some((k) => k.startsWith('STATE-EMS:FL:license:'))
@@ -140,6 +141,7 @@ export async function loadDepartmentBrief(input: ProviderProfileRef) {
     Promise.all(
       [...npis].map(async (npi) => ({ npi, years: await read('Medicaid payments', billingYears(npi)) })),
     ),
+    read('Federal awards', snapshot<{byProvider:Record<string,ProviderFundingEvidence[]>;counters:{checked:string;grantRows:number;contractRows:number;matched:number;ambiguous:number;unmatched:number;contractCoverage:string}}>('data/providers/awards-'+ref.state+'.json')),
     read(
       'Directory contacts',
       snapshot<Record<string, DepartmentContact>>('data/providers/contacts-' + ref.state + '.json'),
@@ -147,6 +149,9 @@ export async function loadDepartmentBrief(input: ProviderProfileRef) {
   ]);
   const contacts = keys.flatMap((k) => (contactsByKey?.[k] ? [{ key: k, ...contactsByKey[k] }] : []));
   const records = profiles.filter((p): p is PublicProviderProfile => !!p);
+  const awards=awardEdition?.byProvider[key]??[];
+  const evidence=awards.length ? {...localEvidence,registryKey:key,registryName:records[0]?.name??key,
+    funding:[...(localEvidence?.funding??[]),...awards]} : localEvidence;
   const facts: BriefFact[] = [];
   const metric = (kind: FactKind, m: DepartmentMetric) =>
     facts.push({
@@ -189,6 +194,7 @@ export async function loadDepartmentBrief(input: ProviderProfileRef) {
     });
   for (const m of evidence?.quality ?? []) metric('quality', m);
   for (const m of evidence?.operations ?? []) metric('operations', m);
+  for (const value of [...evidence?.billing??[],...evidence?.payerMix??[],...evidence?.billingDenials??[]]) metric('claims', value);
   for (const person of evidence?.contacts ?? [])
     facts.push({
       kind: 'people',
@@ -302,5 +308,5 @@ export async function loadDepartmentBrief(input: ProviderProfileRef) {
       source: primary.source.name,
       note: primary.source.date ?? undefined,
     });
-  return { facts, records, contacts, ops, staffing, payments, evidence, unavailable: [...unavailable] };
+  return { facts, records, contacts, ops, staffing, payments, evidence, awards, awardCoverage:awardEdition?.counters, unavailable: [...unavailable] };
 }

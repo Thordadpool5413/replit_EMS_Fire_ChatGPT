@@ -39,7 +39,7 @@ export function providerCatalog(root: string): Plugin {
         void cleanup();
       });
       server.middlewares.use(async (req, res, next) => {
-        const match = /\/data\/providers\/((?:(?:contacts|stations)-)?[A-Z]{2}\.json)(?:\?.*)?$/.exec(
+        const match = /\/data\/providers\/((?:(?:contacts|stations|awards|coverage)-)?[A-Z]{2}\.json)(?:\?.*)?$/.exec(
           req.url ?? '',
         );
         if (!match) return next();

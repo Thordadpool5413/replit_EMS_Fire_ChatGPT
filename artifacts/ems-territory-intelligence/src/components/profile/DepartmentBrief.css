@@ -593,3 +593,37 @@
 .db-nameplate h3 {
   margin-top: 0;
 }
+
+.db-topic-panel details {
+  border-top: 1px solid var(--pi-border);
+}
+.db-topic-panel summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.4rem 1rem;
+  padding: 0.65rem 0;
+}
+.db-topic-panel summary::after {
+  content: '+';
+  color: var(--db-ink);
+}
+.db-topic-panel details[open] summary::after {
+  content: '−';
+}
+.db-topic-panel summary > strong {
+  flex: 1;
+  text-align: end;
+  overflow-wrap: anywhere;
+}
+.db-topic-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 650;
+}
+.db-topic-panel details > dl {
+  margin: 0 0 0.75rem;
+}

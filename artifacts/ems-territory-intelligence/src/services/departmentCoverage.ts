@@ -3,6 +3,8 @@ import type { ProviderEvidence } from '../data/providerProfileEvidence';
 export const coverageLabels = {
   profiles: 'Department profiles',
   device: 'Named device model',
+  aed: 'AED record',
+  supplier: 'Named equipment supplier',
   inventory: 'Dated equipment count',
   purchase: 'Documented purchase date',
   funding: 'Funding record',
@@ -20,6 +22,8 @@ export function countDepartment(
   const count = totals ?? {
     profiles: 0,
     device: 0,
+    aed: 0,
+    supplier: 0,
     inventory: 0,
     purchase: 0,
     funding: 0,
@@ -30,6 +34,8 @@ export function countDepartment(
   };
   count.profiles++;
   if (evidence?.equipment?.some((r) => r.model)) count.device++;
+  if (evidence?.equipment?.some((r) => r.category === 'aed')) count.aed++;
+  if (evidence?.equipment?.some((r) => r.supplier)) count.supplier++;
   if (
     evidence?.equipment?.some(
       (r) => r.quantity != null && ['In service reported', 'Documented historically'].includes(r.status),
@@ -43,4 +49,10 @@ export function countDepartment(
   if (evidence?.billingDenials?.some((r) => r.denialPayer)) count.denials++;
   if (medicaid) count.medicaid++;
   return count;
+}
+
+export async function loadDepartmentCoverage(state: string) {
+  const response = await fetch(import.meta.env.BASE_URL + 'data/providers/coverage-' + state + '.json');
+  if (!response.ok) throw Error('Coverage unavailable');
+  return await response.json() as Record<string, Coverage>;
 }

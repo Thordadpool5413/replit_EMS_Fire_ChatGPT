@@ -22,6 +22,7 @@ export type ProviderEquipmentEvidence = {
   category: EquipmentCategory;
   model?: string;
   manufacturer?: string;
+  brand?: string;
   supplier?: string;
   approvedOn?: string;
   lastPurchasedOn?: string;

@@ -74,7 +74,7 @@ const priority: FactKind[] = [
 ];
 
 const topicNames: Record<FactKind, string> = {
-  equipment: 'Equipment', funding: 'Funding', quality: 'Clinical outcomes', operations: 'Operations',
+  equipment: 'Equipment', funding: 'Funding & purchasing', quality: 'Clinical outcomes', operations: 'Operations',
   stations: 'Stations', staff: 'Staffing', service: 'Service capabilities', people: 'Contacts',
   claims: 'Billing and claims', license: 'Licensing', identity: 'Registry identifiers',
 };
@@ -274,14 +274,17 @@ export function ServiceBrief({
         </div>
       )}
       {overview && (data?.facts.length || workspaceFacts.length) ? (
-        <section className="pr-panel db-source-fields">
+        <section className="pr-panel db-source-fields db-topic-panel">
           <h2 className="pr-icon-heading"><ClipboardList size={20} /> Department records by topic</h2>
           {priority.map((kind) => {
             const rows = [...(data?.facts ?? []), ...workspaceFacts].filter((f) => f.kind === kind);
             if (!rows.length) return null;
             const Icon = symbols[kind];
             return <details key={kind}>
-              <summary><Icon size={16} aria-hidden="true" /> {topicNames[kind]} ({rows.length})</summary>
+              <summary>
+                <span className="db-topic-title"><Icon size={17} aria-hidden="true" /> {topicNames[kind]} <small>({rows.length})</small></span>
+                <strong>{rows[0].value}</strong>
+              </summary>
               <dl>{rows.map((f, i) => <div key={i}>
                 <dt>{f.label}</dt><dd><strong>{f.value}</strong>{f.note && <p>{f.note}</p>}<small>{f.source}</small></dd>
               </div>)}</dl>

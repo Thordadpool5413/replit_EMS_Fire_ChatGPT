@@ -141,7 +141,7 @@ export async function loadDepartmentBrief(input: ProviderProfileRef) {
     Promise.all(
       [...npis].map(async (npi) => ({ npi, years: await read('Medicaid payments', billingYears(npi)) })),
     ),
-    read('Federal awards', snapshot<{byProvider:Record<string,ProviderFundingEvidence[]>;counters:{checked:string;grantRows:number;contractRows:number;matched:number;ambiguous:number;unmatched:number;contractCoverage:string}}>('data/providers/awards-'+ref.state+'.json')),
+    read('Department awards', snapshot<{byProvider:Record<string,ProviderFundingEvidence[]>;counters:{checked:string;grantRows:number;stateGrantRows?:number;contractRows:number;matched:number;ambiguous:number;unmatched:number;contractCoverage:string}}>('data/providers/awards-'+ref.state+'.json')),
     read(
       'Directory contacts',
       snapshot<Record<string, DepartmentContact>>('data/providers/contacts-' + ref.state + '.json'),
@@ -151,7 +151,7 @@ export async function loadDepartmentBrief(input: ProviderProfileRef) {
   const records = profiles.filter((p): p is PublicProviderProfile => !!p);
   const awards=awardEdition?.byProvider[key]??[];
   const evidence=awards.length ? {...localEvidence,registryKey:key,registryName:records[0]?.name??key,
-    funding:[...(localEvidence?.funding??[]),...awards]} : localEvidence;
+    funding:[...awards,...(localEvidence?.funding??[])]} : localEvidence;
   const facts: BriefFact[] = [];
   const metric = (kind: FactKind, m: DepartmentMetric) =>
     facts.push({
@@ -171,9 +171,9 @@ export async function loadDepartmentBrief(input: ProviderProfileRef) {
   for (const unit of equipment)
     facts.push({
       kind: 'equipment',
-      label: unit.status,
+      label: providerEquipmentLabels[unit.category] + ' · ' + unit.status,
       value:
-        [unit.manufacturer, unit.model].filter(Boolean).join(' ') || providerEquipmentLabels[unit.category],
+        [unit.manufacturer ?? unit.brand, unit.model].filter(Boolean).join(' ') || providerEquipmentLabels[unit.category],
       note: [
         unit.quantity != null && unit.quantity + ' units',
         unit.supplier && 'Supplier ' + unit.supplier,

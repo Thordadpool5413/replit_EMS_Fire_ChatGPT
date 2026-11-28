@@ -26,9 +26,34 @@ test('municipal-only payees and ambiguous operator identities stay out of profil
     zip: '',
     county: '',
   }));
-  const edition = departmentAwards('OH', rows);
+  const edition = departmentAwards('OH', rows, {});
   assert.deepEqual(edition.byProvider, {});
   assert.ok(edition.counters.grantRows > 0);
-  const known = departmentAwards('OH', []);
+  const known = departmentAwards('OH', [], {});
   assert.equal(known.counters.matched, 0);
+});
+
+test('Texas grant approvals use the department name and county, without spreading one award to several profiles', () => {
+  const elmwood: DirectoryProvider = {
+    ref: { state: 'TX', source: 'registry', id: 'usfa:TX:AA403' },
+    name: 'Elmwood Volunteer Fire Department, Inc.',
+    kind: 'fire',
+    city: 'Palestine',
+    zip: '75803',
+    county: '48001',
+  };
+  const sameNameElsewhere: DirectoryProvider = {
+    ...elmwood,
+    ref: { state: 'TX', source: 'registry', id: 'usfa:TX:OTHER' },
+    county: '48003',
+  };
+  const counties = { '48001': 'Anderson County', '48003': 'Andrews County' };
+  const edition = departmentAwards('TX', [elmwood, sameNameElsewhere], counties);
+  const award = edition.byProvider['FDID:TX:AA403'].find(row => row.title.includes('Slip-On Unit'));
+  assert.equal(award?.amount, 45000);
+  assert.equal(award?.status, 'Awarded');
+  assert.equal(edition.byProvider['FDID:TX:OTHER'], undefined);
+  const ambiguous = departmentAwards('TX', [elmwood, { ...sameNameElsewhere, county: '48001' }], counties);
+  assert.equal(ambiguous.byProvider['FDID:TX:AA403'], undefined);
+  assert.ok(ambiguous.counters.ambiguous > 0);
 });

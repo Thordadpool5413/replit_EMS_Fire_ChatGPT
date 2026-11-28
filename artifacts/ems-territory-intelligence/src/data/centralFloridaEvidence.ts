@@ -15,6 +15,30 @@ const brevardBudget = {
   date: 'FY2024–25 actual',
   url: 'https://www.brevardfl.gov/docs/default-source/budget/fy-2026-2027/fiscal-year-2026-27-proposed-budget.pdf',
 };
+const brevardPerformance = {
+  ...brevardBudget,
+  label: 'Brevard County FY2026–27 proposed budget, Fire Rescue performance measures, p. 97',
+};
+const brevardPriorPerformance = {
+  label: 'Brevard County FY2025–26 adopted budget, Fire Rescue performance measures, p. 167',
+  date: 'FY2023–24 actual',
+  url: 'https://www.brevardfl.gov/docs/default-source/budget/fy-2025-2026/fiscal-year-2025-2026-adopted-budget.pdf',
+};
+const brevardStrykerApproval = {
+  label: 'Brevard County commissioners, approved file 7981',
+  date: '2025-05-20',
+  url: 'https://brevardfl.legistar.com/LegislationDetail.aspx?GUID=9F254495-784C-45CB-99E8-095777FDD297&ID=7398381',
+};
+const brevardLucasRequest = {
+  label: 'Brevard County FY2018–19 adopted Fire Rescue budget',
+  date: 'FY2018–19',
+  url: 'https://www.brevardfl.gov/docs/default-source/budget/fy-2018-2019/departments-2019/2018-2019-fire-rescue-department-adopted.pdf',
+};
+const melbourneBeachAeds = {
+  label: 'Town of Melbourne Beach · The Beachcomber, p. 26',
+  date: '2020-10-12',
+  url: 'https://fliphtml5.com/bhgkk/zbdi/Beachcomber,_October_2020/26/',
+};
 const brevardService = {
   label: 'Brevard County commissioners, file 2074',
   date: '2020-09-15',
@@ -53,6 +77,39 @@ export const centralFloridaEvidence: ProviderEvidence[] = [
       { category: 'monitor', manufacturer: 'Stryker', supplier: 'Stryker Sales Corporation', approvedOn: '2020-09-15',
         serviceEnds: '2020-12-31', status: 'Service agreement',
         details: 'County commissioners approved a three-month extension of technical service and support for the department’s LIFEPAK monitors.', source: brevardService },
+      { category: 'cpr', model: 'LUCAS', quantity: 53, status: 'Proposed purchase',
+        details: 'Historic grant application requested funding for 53 devices. The budget does not establish that they were awarded or purchased.', source: brevardLucasRequest },
+    ],
+    funding: [
+      {
+        title: 'Stryker stretcher and power-load systems', status: 'Approved', amount: 397667.78,
+        basis: 'County commissioners approved six Stryker power-load systems and six stretchers for Fire Rescue. The approval does not give a delivery or payment date.',
+        source: brevardStrykerApproval,
+      },
+      {
+        title: 'Assistance to Firefighters Grant application for 53 LUCAS devices', status: 'Requested',
+        basis: 'The adopted budget describes an application for mechanical CPR devices. An award amount is not reported here.',
+        source: brevardLucasRequest,
+      },
+    ],
+    operations: [
+      { label: 'EMS transports', value: 52830, reportingPeriod: 'FY2024–25', source: brevardPerformance },
+      { label: 'Calls with emergency response', value: 102409, reportingPeriod: 'FY2024–25', source: brevardPerformance },
+      { label: 'EMS emergency responses excluding cancelled calls', value: 78114, reportingPeriod: 'FY2024–25', source: brevardPerformance },
+      { label: 'EMS transports', value: 52807, reportingPeriod: 'FY2023–24', source: brevardPriorPerformance },
+      { label: 'Calls with emergency response', value: 96114, reportingPeriod: 'FY2023–24', source: brevardPriorPerformance },
+    ],
+    quality: [
+      {
+        label: 'Cardiac arrest patients achieving return of spontaneous circulation (ROSC)',
+        value: 173, reportingPeriod: 'FY2024–25', source: brevardPerformance,
+        context: 'Department-reported count. The budget table gives no denominator or survival-to-discharge outcome.',
+      },
+      {
+        label: 'Cardiac arrest patients achieving return of spontaneous circulation (ROSC)',
+        value: 285, reportingPeriod: 'FY2023–24', source: brevardPriorPerformance,
+        context: 'Department-reported count. The budget table gives no denominator or survival-to-discharge outcome.',
+      },
     ],
     billing: [{
       label: 'EMS charges-for-services revenue', value: 24149375, format: 'currency', reportingPeriod: 'FY2024–25',
@@ -63,6 +120,21 @@ export const centralFloridaEvidence: ProviderEvidence[] = [
       area: 'Capital planning', title: 'Ambulance billing vendor',
       detail: 'The department’s finance page identifies EMS Management and Consultants (EMS|MC) as its third-party EMS billing vendor.',
       source: brevardBilling,
+    }],
+  },
+  {
+    registryKey: 'FDID:FL:19112', registryName: 'Melbourne Beach Volunteer Fire Department',
+    equipment: [{
+      category: 'aed', brand: 'LIFEPAK', quantity: 4, status: 'Documented historically',
+      deployment: 'The department reported placing an AED on every apparatus at the time.',
+      details: 'The town newsletter reported that four new LIFEPAK-brand AEDs were acquired through the Brevard County Fire Rescue EMS grant. The exact model, vendor, payment date and current count are not reported there.',
+      source: melbourneBeachAeds,
+    }],
+    funding: [{
+      title: 'Four apparatus AEDs through the Brevard County Fire Rescue EMS Grant',
+      status: 'Awarded', fiscalYear: 2020,
+      basis: 'The town newsletter identifies the county and Florida EMS grant as the funding source. It does not state the amount.',
+      source: melbourneBeachAeds,
     }],
   },
   {

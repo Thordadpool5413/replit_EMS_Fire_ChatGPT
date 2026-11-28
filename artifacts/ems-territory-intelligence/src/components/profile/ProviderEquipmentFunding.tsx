@@ -40,7 +40,7 @@ function EvidenceStatus({ status }: { status: keyof typeof statusStyle }) {
 }
 
 function EquipmentEvidence({ entry }: { entry: ProviderEquipmentEvidence }) {
-  const device = [entry.manufacturer, entry.model].filter(Boolean).join(' ');
+  const device = [entry.manufacturer ?? entry.brand, entry.model].filter(Boolean).join(' ');
   return <article className="pr-equipment-evidence" data-tone={statusStyle[entry.status].tone}>
     <EvidenceStatus status={entry.status} />
     {device && <p className="pr-record-value">{device}</p>}
@@ -48,7 +48,7 @@ function EquipmentEvidence({ entry }: { entry: ProviderEquipmentEvidence }) {
     {entry.deployment && <p className="pr-equipment-deployment">{entry.deployment}</p>}
     <p>{entry.details}</p>
     <EvidenceFields values={[
-      ['Manufacturer', entry.manufacturer ?? (entry.category === 'aed' ? 'Not published' : undefined)],
+      ['Brand', entry.brand], ['Manufacturer', entry.manufacturer ?? (entry.category === 'aed' ? 'Not published' : undefined)],
       ['Supplier', entry.supplier], ['Approval date', entry.approvedOn], ['Documented purchase date', entry.lastPurchasedOn ?? 'Not published'],
       ['Paid on', entry.paidOn], ['Owner', entry.owner], ['Maintained by', entry.maintainedBy], ['Acquired', entry.acquiredOn],
       ['Warranty ends', entry.warrantyEnds], ['Service ends', entry.serviceEnds],
@@ -101,7 +101,7 @@ export function ProviderEquipmentFunding({ evidence, children, showProfileSource
         </section>)}
       </div>}
       {missing.length > 0 && <section className="pr-panel pr-missing-equipment">
-        <h3><BriefcaseMedical size={16} aria-hidden="true" /> No equipment evidence on file</h3>
+        <h3><BriefcaseMedical size={16} aria-hidden="true" /> Equipment categories without a published record</h3>
         <ul>{missing.map(({ key, label, icon: Icon }) => <li key={key}><Icon size={16} aria-hidden="true" />{label}</li>)}</ul>
       </section>}
     </section>
@@ -109,8 +109,8 @@ export function ProviderEquipmentFunding({ evidence, children, showProfileSource
       <section className="pr-panel pr-funding" ref={funding} tabIndex={-1}>
         <h2><CircleDollarSign size={21} aria-hidden="true" /> Funding &amp; purchasing</h2>
         {fundedRecords.length > 0 ? <ol className="pr-timeline">
-          {fundedRecords.map(entry => <FundingEntry key={entry.title + entry.source.url} entry={entry} />)}
-        </ol> : <p className="pr-muted">No equipment funding record on file</p>}
+          {fundedRecords.map(entry => <FundingEntry key={entry.title + entry.source.url + entry.source.label} entry={entry} />)}
+        </ol> : <p className="pr-muted">No published funding record linked to this department</p>}
         {showProfileSources && fundedRecords.length > 0 && <a className="pr-source-link pr-funding-sources" href="#sources">View profile sources <ArrowUpRight size={14} aria-hidden="true" /></a>}
       </section>
       {children}

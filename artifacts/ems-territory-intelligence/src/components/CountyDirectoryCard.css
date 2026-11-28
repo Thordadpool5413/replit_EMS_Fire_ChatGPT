@@ -231,3 +231,19 @@
   .county-brief .cb-place { min-height: 28px; }
   .county-brief .cb-name { overflow-wrap: normal; word-break: normal; }
 }
+
+.cb-provider-coverage {
+  border-block-start: 1px solid var(--cfs-border, #cbd8e7);
+  padding-block: 0.5rem;
+  font-size: 0.75rem;
+}
+.cb-provider-coverage ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.8rem;
+}
+.cb-provider-coverage li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}

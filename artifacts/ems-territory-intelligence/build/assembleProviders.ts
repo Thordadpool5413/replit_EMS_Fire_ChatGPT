@@ -259,7 +259,7 @@ for (const state of Object.keys(manifest.byState).sort()) {
     );
     await writeFile(path.join(process.argv[2], 'contacts-' + state + '.json'), JSON.stringify(contacts));
   }
-  const awards = departmentAwards(state,rows);
+  const awards = departmentAwards(state,rows,manifest.countyNames);
   const awardFile = 'awards-'+state+'.json';
   const payload = JSON.stringify(awards);
   generatedFiles.set('/data/providers/'+awardFile,payload);

@@ -31,6 +31,37 @@ const marysville = {
 };
 export const departmentCouncilRecords: ProviderEvidence[] = [
   {
+    registryKey: 'FDID:TX:AA403',
+    registryName: 'Elmwood Volunteer Fire Department, Inc.',
+    funding: [
+      {
+        title: 'Vehicle extrication cutter and spreader',
+        amount: 13900,
+        status: 'Awarded',
+        fiscalYear: 2017,
+        basis: 'Texas A&M Forest Service reports the department used the cost-share grant to replace 15-year-old rescue tools.',
+        source: {
+          label: 'Texas A&M Forest Service · Elmwood rescue tools grant',
+          date: '2017-05-30',
+          url: 'https://tfsweb.tamu.edu/elmwood-vfd-receives-grant-to-update-rescue-tools/',
+        },
+      },
+    ],
+    operations: [
+      {
+        label: 'Freightliner water tender added to the fleet',
+        value: 1,
+        reportingPeriod: '2019',
+        context: 'The department took delivery of a 2019 Freightliner through a Texas A&M Forest Service cost-share grant. The current fleet count and grant amount were not reported by this source.',
+        source: {
+          label: 'Texas A&M Forest Service · Elmwood water tender delivery',
+          date: '2019',
+          url: 'https://tfsweb.tamu.edu/elmwood-volunteer-fire-department-readies-for-fire-season-with-new-tender/',
+        },
+      },
+    ],
+  },
+  {
     registryKey: 'FDID:FL:10062',
     registryName: 'Lauderhill Fire-Rescue',
     equipment: [

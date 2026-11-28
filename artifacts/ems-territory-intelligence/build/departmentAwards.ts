@@ -19,6 +19,21 @@ type Contract = {
   awardAmount: number | null;
   startDate: string;
 };
+type StateGrantEdition = {
+  date: string;
+  url: string;
+  rows: { index: number; page: number; recipient: string; county: string; purpose: string; amount: number }[];
+};
+const texasGrantEditions: StateGrantEdition[] = JSON.parse(
+  gunzipSync(readFileSync(new URL('./data/texas-fire-grants.json.gz', import.meta.url))).toString(),
+);
+function texasRecipientKey(recipient: string, county: string) {
+  const name = normalized(recipient)
+    .replace(/\bvfd\b/g, 'volunteer fire department')
+    .replace(/\s+(?:inc|incorporated|llc)$/, '');
+  return name + '|' + normalized(county.replace(/ County$/i, ''));
+}
+
 type Edition = { checked: string; records: Grant[] };
 const grants: Edition = JSON.parse(
   gunzipSync(readFileSync(new URL('./data/department-awards.json.gz', import.meta.url))).toString(),
@@ -37,7 +52,7 @@ function normalized(name: string) {
     .replace(/\s+/g, ' ')
     .trim();
 }
-export function departmentAwards(state: string, rows: DirectoryProvider[]) {
+export function departmentAwards(state: string, rows: DirectoryProvider[], countyNames: Record<string, string>) {
   const names = new Map<string, Set<string>>();
   for (const row of rows)
     for (const value of [row.name, ...(row.aliases ?? [])]) {
@@ -61,14 +76,14 @@ export function departmentAwards(state: string, rows: DirectoryProvider[]) {
   const counters = {
     checked: grants.checked,
     grantRows: 0,
+    stateGrantRows: 0,
     contractRows: 0,
     matched: 0,
     ambiguous: 0,
     unmatched: 0,
     contractCoverage: purchases.byState[state]?.status ?? 'unavailable',
   };
-  function accept(recipient: string, event: ProviderFundingEvidence) {
-    const owners = names.get(normalized(recipient));
+  function accept(owners: Set<string> | undefined, event: ProviderFundingEvidence) {
     if (!owners?.size) {
       counters.unmatched++;
       return;
@@ -85,7 +100,7 @@ export function departmentAwards(state: string, rows: DirectoryProvider[]) {
     .filter((r) => r.vendorState === state)
     .sort((a, b) => b.fiscalYear - a.fiscalYear || a.awardNumber.localeCompare(b.awardNumber))) {
     counters.grantRows++;
-    accept(r.vendorName, {
+    accept(names.get(normalized(r.vendorName)), {
       title: 'Assistance to Firefighters Grant · ' + r.awardNumber,
       status: 'Awarded',
       fiscalYear: r.fiscalYear,
@@ -103,7 +118,7 @@ export function departmentAwards(state: string, rows: DirectoryProvider[]) {
   }
   for (const r of purchases.byState[state]?.awards ?? []) {
     counters.contractRows++;
-    accept(r.recipient, {
+    accept(names.get(normalized(r.recipient)), {
       title: 'Federal contract recipient · ' + r.id,
       status: 'Awarded',
       ...(r.awardAmount != null ? { amount: r.awardAmount } : {}),
@@ -115,6 +130,37 @@ export function departmentAwards(state: string, rows: DirectoryProvider[]) {
         url: 'https://www.usaspending.gov/award/' + encodeURIComponent(r.id),
       },
     });
+  }
+  if (state === 'TX') {
+    const byCountyAndName = new Map<string, Set<string>>();
+    for (const row of rows) {
+      const county = countyNames[row.county];
+      if (!county || row.kind === 'ems') continue;
+      for (const alias of [row.name, ...(row.aliases ?? [])]) {
+        const name = texasRecipientKey(alias, county);
+        const owners = byCountyAndName.get(name) ?? new Set<string>();
+        owners.add(profileSourceKey(row.ref));
+        byCountyAndName.set(name, owners);
+      }
+    }
+    for (const edition of texasGrantEditions) {
+      for (const row of edition.rows) {
+        counters.stateGrantRows++;
+        accept(byCountyAndName.get(texasRecipientKey(row.recipient, row.county)), {
+          title: 'Texas HB 2604 award · ' + row.purpose,
+          status: 'Awarded',
+          fiscalYear: 2026,
+          amount: row.amount,
+          basis: row.recipient + ' · ' + row.county + ' County · Grant approval for ' + row.purpose +
+            '. The funding table records the award amount. Delivery and payment dates are unspecified.',
+          source: {
+            label: 'Texas A&M Forest Service · final approval ' + row.index,
+            date: edition.date,
+            url: edition.url + '#page=' + row.page,
+          },
+        });
+      }
+    }
   }
   return { byProvider, counters };
 }

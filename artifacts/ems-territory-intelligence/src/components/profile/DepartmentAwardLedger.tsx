@@ -17,10 +17,10 @@ export function DepartmentAwardLedger({
     <section className="pr-panel">
       <h2 className="pr-icon-heading">
         <Landmark size={20} />
-        Federal awards naming this department
+        Public awards naming this department
       </h2>
       <p>
-        {data.awards.length.toLocaleString()} matched records · OpenFEMA checked {edition.checked}
+        {data.awards.length.toLocaleString()} matched records · Federal sources checked {edition.checked}
       </p>
       {coverage && (
         <p className="pr-muted">
@@ -28,19 +28,20 @@ export function DepartmentAwardLedger({
           2020 and {edition.contractRows.toLocaleString()} federal AED procurement records in the retained
           USAspending search ({edition.contractCoverage}). Matches require a unique department recipient in
           the state.
+          {edition.stateGrantRows ? ` Texas HB 2604 also contributed ${edition.stateGrantRows.toLocaleString()} approval rows, matched by department and county.` : null}
         </p>
       )}
       {!!data.awards.length && (
         <ol className="pr-source-grid">
           {data.awards.map((a) => (
-            <li className="pr-source-tile" key={a.source.url}>
+            <li className="pr-source-tile" key={a.source.url + a.source.label}>
               <strong>
                 {a.amount == null
                   ? 'Amount unreported'
                   : a.amount.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
               </strong>
               <h3>{a.title}</h3>
-              <p>{a.basis}</p>
+              <p>{a.status} · {a.basis}</p>
               <ProviderSourceLink source={a.source} />
             </li>
           ))}

@@ -1,8 +1,9 @@
 import React from 'react';
 import {
   ArrowRight, ExternalLink, Users, Ambulance, HeartPulse, Timer, Hospital, Wallet, UserRound,
-  HandCoins, Shield, MapPinned, Navigation, Hash, Database,
+  HandCoins, Shield, MapPinned, Navigation, Hash, Database, Landmark, ClipboardList,
 } from 'lucide-react';
+import type { Coverage } from '../services/departmentCoverage';
 import type { LucideIcon } from 'lucide-react';
 import type { CountyFigureSourceKey, CountyHealthRecord } from '../types';
 import type { CountySourceListingCounts } from '../services/nationalSourceDirectory';
@@ -30,6 +31,7 @@ interface CountyDirectoryCardProps {
   nriError: boolean;
   registryListings?: CountySourceListingCounts;
   registryStatus?: 'idle' | 'loading' | 'ready' | 'unavailable';
+  departmentCoverage?: Coverage;
   onInspectCounty: () => void;
 }
 
@@ -47,7 +49,7 @@ const ALL_FIGURE_KEYS: CountyFigureSourceKey[] = [
  * -> FEMA natural-hazard line -> geography -> citations.
  */
 export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
-  county: c, nri, nriSourceUrl, nriLoading, nriError, registryListings, registryStatus = 'idle', onInspectCounty,
+  county: c, nri, nriSourceUrl, nriLoading, nriError, registryListings, registryStatus = 'idle', departmentCoverage, onInspectCounty,
 }) => {
   const values = c as unknown as Record<string, unknown>;
   const riskColor = nri?.riskRating ? FEMA_NRI_RATING_COLORS[nri.riskRating] : undefined;
@@ -139,6 +141,16 @@ export const CountyDirectoryCard: React.FC<CountyDirectoryCardProps> = ({
           )}
         </p>
 
+        {departmentCoverage && (
+          <section className="cb-provider-coverage" aria-label="Department evidence by topic">
+            <strong>{departmentCoverage.profiles.toLocaleString()} department profiles</strong>
+            <ul>
+              <li><ClipboardList size={13} aria-hidden="true" />{departmentCoverage.aed ?? 0} with AED records</li>
+              <li><Landmark size={13} aria-hidden="true" />{departmentCoverage.funding} with funding</li>
+              <li><HeartPulse size={13} aria-hidden="true" />{departmentCoverage.quality} with clinical measures</li>
+            </ul>
+          </section>
+        )}
         <p className="cb-registry" data-testid={`text-registry-listings-${c.countyFips}`}>
           <Database className="cfs-ico" aria-hidden="true" />
           <span className="cb-registry-label">Public registry listings</span>

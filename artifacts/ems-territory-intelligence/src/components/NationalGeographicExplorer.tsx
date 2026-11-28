@@ -1,3 +1,5 @@
+import { useQuery } from '@tanstack/react-query';
+import { loadDepartmentCoverage } from '../services/departmentCoverage';
 import { matchesAgencyScope } from '../utils/providerRecordTrust';
 import { ProviderCardIntelligence } from './profile/ProviderCardIntelligence';
 import type { AgencySourceRecordAssociation } from '../types';
@@ -522,6 +524,12 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
     () => selectedStateCode !== 'all' ? { stateCode: selectedStateCode } : undefined,
     [selectedStateCode],
   );
+  const stateEvidence = useQuery({
+    queryKey: ['department-coverage', selectedStateCode],
+    enabled: selectedStateCode !== 'all',
+    staleTime: Infinity,
+    queryFn: () => loadDepartmentCoverage(selectedStateCode),
+  });
   const selectedStateNriQuery = useGetNriCountyContext(selectedStateNriParams, {
     query: {
       enabled: selectedStateCode !== 'all' && middleTab === 'counties',
@@ -2073,6 +2081,7 @@ export const NationalGeographicExplorer: React.FC<NationalGeographicExplorerProp
                   <CountyDirectoryCard
                     key={`${c.stateCode}-${c.countyFips}`}
                     county={c}
+                    departmentCoverage={stateEvidence.data?.[c.countyFips]}
                     nri={countyNri}
                     nriSourceUrl={safeAgencyWebsiteUrl(countyNri?.sourceUrl)}
                     nriLoading={selectedStateNriQuery.isLoading}

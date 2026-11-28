@@ -313,6 +313,7 @@ export default function ProviderRecord({ reference }: { reference: string }) {
       {section === 'equipment' ? <div className="pr-detail-wrap">
         {(timelineEvidence?.equipment?.length || timelineEvidence?.funding?.length) ? <ProviderStory key={reference} evidence={timelineEvidence} nerisId={stationId}/> : null}
         {ref && <DepartmentAwardLedger record={ref}/>}
+        {ref && <DepartmentAwardLedger record={ref} />}
         <ProviderEquipmentFunding evidence={evidence}>
           <ProviderPurchasing registryKey={evidence?.registryKey ?? profile.registryKey} />
           <RegionalAedSources state={profile.stateCode} county={profile.countyFips} nerisId={stationId} profile />
@@ -323,7 +324,7 @@ export default function ProviderRecord({ reference }: { reference: string }) {
         <div className="pr-detail">
           {section === 'discovery' && <><ProfileGlance evidence={evidence}/><DiscoveryCoach identity={profile.identity} evidence={evidence} key={reference} agency={profile.name} /></>}
           {section === 'overview' && <>{evidence?.equipment?.length || evidence?.funding?.length ? <ProviderCallBrief evidence={evidence} /> : null}<Overview profile={profile} evidence={evidence} /></>}
-          {ref && (section==='equipment' || section==='grants' || section==='sources') && <DepartmentAwardLedger record={ref} coverage={section==='sources'}/>}
+          {ref && (section==='grants' || section==='sources') && <DepartmentAwardLedger record={ref} coverage={section==='sources'}/>}
           {section === 'grants' && <ProviderGrants state={profile.stateCode} name={evidence?.registryName ?? profile.name} evidence={evidence} />}
           {section === 'people' && <>{ref && <DepartmentContacts record={ref}/>}<ProviderPeople evidence={evidence} />{[...floridaLicenses].map(license=><FloridaProviderContacts key={license} license={license} />)}{ref && <StationContactHistory record={ref}/>}</>}
           {section === 'stations' && <>{ref && <StationContactHistory record={ref}/>}<ProviderStations profile={profile} evidence={evidence} />

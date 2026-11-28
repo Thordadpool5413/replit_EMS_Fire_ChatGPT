@@ -42,7 +42,7 @@ try {
   await waitFor(cdp,'Boolean(document.querySelector("[data-testid=public-provider-search] select option[value=FL]"))','public registry index',60000);
   await ev('(()=>{const s=document.querySelector("[aria-label=\\"Public provider state\\"]");const set=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,"value").set;set.call(s,"FL");s.dispatchEvent(new Event("change",{bubbles:true}))})()');
   await waitFor(cdp,'Boolean(document.querySelector("[data-testid=public-provider-result]"))','real Florida public records without cloud access',60000);
-  await ev('document.querySelector("[data-testid=public-provider-result] button").click()');
+  await ev('document.querySelector("[data-testid=public-provider-result] .dd-source-toggle").click()');
   await waitFor(cdp,'Boolean(document.querySelector("[data-testid=public-provider-profile]"))','source provider profile',60000);
   assert.ok((await ev('document.querySelector("[data-testid=public-provider-profile]").textContent')).includes('End-user validation required'));
   assert.equal(await ev('document.querySelectorAll(".agency-lead-cards-grid > div").length'),0,'Browsing source listings never creates saved accounts');
@@ -59,6 +59,7 @@ try {
   await cdp.send('Page.navigate',{url:cocoa.href});
   await waitFor(cdp,'document.querySelector(".db-overview")?.textContent.includes("5,920")','City of Cocoa operational record',60000);
   assert.equal(await ev('document.querySelector(".pr-hero h1").textContent'),'Cocoa Fire Department');
+  await waitFor(cdp,'document.querySelector(".db-overview .db-chart")?.textContent.includes("Career") && document.querySelector(".db-overview .db-facts")?.textContent.includes("48")','decoded Cocoa registry staffing',30000);
   assert.equal(await ev('new URL(location.href).searchParams.get("profile")'),'FL/registry/usfa:FL:19052');
   await ev('location.hash="people"');
   await waitFor(cdp,'document.querySelector(".pr-detail")?.textContent.includes("Jonathan Lamm")','Cocoa named chief',60000);

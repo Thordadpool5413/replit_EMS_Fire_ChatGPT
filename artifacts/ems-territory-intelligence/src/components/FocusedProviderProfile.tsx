@@ -1,3 +1,8 @@
+import { savedDepartmentRef } from '../services/matchedWorkspaceFacts';
+import { departmentAliases, profileSourceKey } from '../services/departmentIdentity';
+import { ServiceBrief, DepartmentSourceFields } from './profile/ServiceBrief';
+import { DepartmentContacts } from './profile/DepartmentContacts';
+import { StationContactHistory } from './profile/StationContactHistory';
 import { ProviderChanges } from './profile/ProviderChanges';
 import { profileCmsLookupNpi } from '../services/cmsAmbulanceEvidence';
 import { DiscoveryCoach } from './profile/DiscoveryCoach';
@@ -467,13 +472,17 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
 
   // Default to Overview; every topic shares one accessible content region.
   const [requestedReviewField, setRequestedReviewField] = useState<string | undefined>();
+  const department = savedDepartmentRef(rawAgency);
+  const departmentId = department && profileSourceKey(department);
+  const linkedKeys = departmentId ? [departmentId,...departmentAliases(rawAgency.stateCode,departmentId)] : [];
   const publicIdentity = rawAgency.registryIdentity;
   const identityClaims = registryClaims(rawAgency);
-  const publicEvidence = (publicIdentity && findProviderEvidence(registryIdentityKey(publicIdentity), publicIdentity.name))
+  const publicEvidence = findProviderEvidenceByConfirmedKeys(linkedKeys) ?? (publicIdentity && findProviderEvidence(registryIdentityKey(publicIdentity), publicIdentity.name))
     ?? findProviderEvidenceByConfirmedKeys(identityClaims.keys.filter(key => key !== (publicIdentity && registryIdentityKey(publicIdentity))));
   const floridaLicense = publicIdentity?.sourceName === 'State EMS' && publicIdentity.stateCode === 'FL'
-    ? publicIdentity.identifier : providerEvidenceFloridaLicense(publicEvidence);
-  const linkedBillingNpi = linkedBillingOrganization(publicIdentity ? registryIdentityKey(publicIdentity) : undefined, publicEvidence);
+    ? publicIdentity.identifier : providerEvidenceFloridaLicense(publicEvidence) ?? linkedKeys.find(key => key.startsWith('STATE-EMS:FL:license:'))?.split(':').pop();
+  const linkedBillingNpi = linkedBillingOrganization(departmentId ?? (publicIdentity && registryIdentityKey(publicIdentity)), publicEvidence) ??
+    linkedKeys.find(key=>key.startsWith('NPI:'))?.slice(4);
   const [activeSection, setActiveSection] = useState<ProfileSection>('overview');
   // Measure the sticky profile header so the topic navigation docks directly beneath it
   // on every phone width and text size instead of relying on a fixed pixel guess.
@@ -1672,10 +1681,14 @@ export const FocusedProviderProfile: React.FC<FocusedProviderProfileProps> = ({
             </ProfileCommandOverview>
           )}
 
+          {activeSection === 'overview' && department && <ServiceBrief record={department} name={agency.name} overview linkToPublicProfile/>}
+          {activeSection === 'decision_makers' && department && <DepartmentContacts record={department}/>}
+          {activeSection === 'operations' && department && <StationContactHistory record={department}/>}
+          {activeSection === 'evidence' && department && <DepartmentSourceFields record={department}/>}
           {activeSection === 'overview' && <ProviderIntelligenceCoverage key={rawAgency.id} agency={rawAgency} directory={directoryAgencies} onReview={openProfileSources}/>}
           {activeSection === 'overview' && <ProviderChanges evidence={publicEvidence} />}
           {activeSection === 'overview' && <ProviderStory key={rawAgency.id} evidence={publicEvidence} nerisId={publicIdentity?.sourceName === 'NERIS' ? publicIdentity.identifier : providerEvidenceNerisId(publicEvidence)} stationDevices={<StationEquipmentSummary agency={rawAgency} directory={directoryAgencies} />} />}
-          {activeSection === 'overview' && <InlineAgencyRecords state={agency.stateCode} registryKey={publicIdentity ? registryIdentityKey(publicIdentity) : undefined} evidence={publicEvidence} />}
+          {activeSection === 'evidence' && <InlineAgencyRecords state={agency.stateCode} registryKey={departmentId ?? (publicIdentity && registryIdentityKey(publicIdentity))} evidence={publicEvidence} />}
           {activeSection === 'overview' && <ProviderEvidenceStatus evidence={publicEvidence} />}
           {activeSection === 'overview' && <ProviderCardIntelligence agency={agency} />}
           {activeSection === 'overview' && <DepartmentFacilities key={rawAgency.id} agency={rawAgency} onReview={openProfileSources}/>}

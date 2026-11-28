@@ -1,7 +1,7 @@
 import { gunzipSync, strFromU8 } from 'fflate';
 import { loadSourceDirectoryManifest } from './nationalSourceDirectory';
 
-type OperationsShard = { file: string; count: number; sha256: string; directorySha256: string };
+type OperationsShard = { file: string; count: number; sha256: string; decodedSha256: string; directorySha256: string };
 type OperationsIndex = { schemaVersion: 1; retrievedAt: string; states: Record<string, OperationsShard> };
 type OperationCount = number | null;
 type OperationsRow = [string | null, OperationCount, OperationCount, OperationCount, OperationCount, OperationCount, OperationCount];
@@ -43,15 +43,18 @@ function loadIndex() {
 }
 
 function loadShard(shard: OperationsShard) {
-  const key = shard.file + ':' + shard.sha256;
+  const key = shard.file + ':' + shard.sha256 + ':' + shard.decodedSha256;
   const cached = shards.get(key);
   if (cached) return cached;
   const pending = readFile(shard.file).then(async (response) => {
     const bytes = await response.arrayBuffer();
     const hash = await crypto.subtle.digest('SHA-256', bytes);
     const checksum = Array.from(new Uint8Array(hash), (part) => part.toString(16).padStart(2, '0')).join('');
-    if (checksum !== shard.sha256) throw Error('USFA operations integrity check failed');
-    return JSON.parse(strFromU8(gunzipSync(new Uint8Array(bytes)))) as PackedOperations;
+    const payload = new Uint8Array(bytes);
+    const compressed = payload[0] === 0x1f && payload[1] === 0x8b;
+    // Browsers decode Content-Encoding: gzip before exposing the response body.
+    if (checksum !== (compressed ? shard.sha256 : shard.decodedSha256)) throw Error('USFA operations integrity check failed');
+    return JSON.parse(strFromU8(compressed ? gunzipSync(payload) : payload)) as PackedOperations;
   }).catch((error) => {
     shards.delete(key);
     throw error;

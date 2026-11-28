@@ -39,6 +39,7 @@ type Props = {
   location?: string;
   license?: FloridaEmsLicense;
   overview?: boolean;
+  linkToPublicProfile?: boolean;
   serviceLevel?: string | null;
   reportedStations?: number | null;
   reportDate?: string | null;
@@ -164,12 +165,14 @@ export function ServiceBrief({
   directoryRow,
   overview,
   workspaceFacts = [],
+  linkToPublicProfile = false,
 }: Props) {
   const ref = departmentProfile(record),
     key = profileSourceKey(ref),
     href = providerProfileHref(ref);
   const query = useDepartmentBrief(ref),
     data = query.data;
+  if (linkToPublicProfile && !data?.records.length) return null;
   const kind =
     category ??
     (isCombinedDepartment(key) || data?.evidence?.combinedServices
@@ -186,7 +189,7 @@ export function ServiceBrief({
     .slice(1)
     .filter((f) => f.kind !== 'identity')
     .slice(0, overview ? 5 : 2);
-  const target = (fact: BriefFact) => (overview ? '' : href) + '#' + factSection[fact.kind];
+  const target = (fact: BriefFact) => (overview && !linkToPublicProfile ? '' : href) + '#' + factSection[fact.kind];
   const status = query.isPending ? (
     <p role="status" className="db-loading">
       Loading department records…

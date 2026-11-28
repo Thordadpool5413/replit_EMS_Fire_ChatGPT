@@ -61,6 +61,39 @@ const colors = {
 };
 const refKey = (ref: ProviderProfileRef) => ref.source + '/' + ref.id;
 
+function MosaicTile({
+  tile,
+  loaded,
+  onLoad,
+}: {
+  tile: { id: string; x: number; y: number; size: number };
+  loaded: boolean;
+  onLoad: () => void;
+}) {
+  const [zoom, y, x] = tile.id.split('/').map(Number);
+  const level = Math.min(8, zoom),
+    subdivisions = 2 ** (zoom - level);
+  const size = 256 / subdivisions;
+  const parent = [level, Math.floor(y / subdivisions), Math.floor(x / subdivisions)].join('/');
+  const href =
+    'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_NextGeneration/default/GoogleMapsCompatible_Level8/' +
+    parent +
+    '.jpeg';
+  return (
+    <svg
+      x={tile.x}
+      y={tile.y}
+      width={tile.size + 0.15}
+      height={tile.size + 0.15}
+      overflow="hidden"
+      viewBox={[(x % subdivisions) * size, (y % subdivisions) * size, size, size].join(' ')}
+      aria-hidden="true"
+    >
+      <image href={href} width={256} height={256} opacity={loaded ? 1 : 0} onLoad={onLoad} />
+    </svg>
+  );
+}
+
 function GoogleBounds({ county, failed }: { county: CountyBoundaryNode; failed: () => void }) {
   const map = useMap(),
     status = useApiLoadingStatus();
@@ -104,6 +137,7 @@ export function CountySiteMap({
   const [zoom, setZoom] = useState(1),
     [focus, setFocus] = useState<XY>();
   const [loadedTiles, setLoadedTiles] = useState<ReadonlySet<string>>(() => new Set());
+  const [missingTiles, setMissingTiles] = useState<ReadonlySet<string>>(() => new Set());
   const [imagery, setImagery] = useState(true),
     [googleZoom, setGoogleZoom] = useState(8);
   const svg = useRef<SVGSVGElement>(null);
@@ -196,7 +230,11 @@ export function CountySiteMap({
     choose(pin);
     if (!useGoogle && zoom > 1) setFocus(worldPoint(pin.lat, pin.lng, county.centroid.lng));
   };
-  const showingTiles = imagery && viewport.tiles.some((tile) => loadedTiles.has(tile.id));
+  const showingMosaic = imagery && viewport.tiles.some((tile) => loadedTiles.has('mosaic:' + tile.id));
+  const showingAerial = imagery && viewport.tiles.some((tile) => loadedTiles.has(tile.id));
+  const showingTiles = showingMosaic || showingAerial;
+  const markLoaded = (id: string) =>
+    setLoadedTiles((previous) => (previous.has(id) ? previous : new Set([...previous, id])));
   const pinTypes = [...new Set(points.map((pin) => pin.kind))];
   const layerPending =
     layer === 'Departments' ? departments.isPending : layer === 'Stations' ? stations.isPending : false;
@@ -312,26 +350,33 @@ export function CountySiteMap({
               </defs>
               <rect width={mapWidth} height={mapHeight} fill="#1c383f" />
               {imagery &&
-                viewport.tiles.map((t) => (
-                  <image
-                    key={t.id}
-                    href={t.url}
-                    x={t.x}
-                    y={t.y}
-                    width={t.size + 0.15}
-                    height={t.size + 0.15}
-                    opacity={loadedTiles.has(t.id) ? 1 : 0}
-                    onLoad={() =>
-                      setLoadedTiles((previous) =>
-                        previous.has(t.id) ? previous : new Set([...previous, t.id]),
-                      )
-                    }
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                    aria-hidden="true"
-                  />
-                ))}
+                viewport.tiles.map((t) =>
+                  missingTiles.has(t.id) ? (
+                    <MosaicTile
+                      key={'mosaic:' + t.id}
+                      tile={t}
+                      loaded={loadedTiles.has('mosaic:' + t.id)}
+                      onLoad={() => markLoaded('mosaic:' + t.id)}
+                    />
+                  ) : (
+                    <image
+                      key={t.id}
+                      href={t.url}
+                      x={t.x}
+                      y={t.y}
+                      width={t.size + 0.15}
+                      height={t.size + 0.15}
+                      opacity={loadedTiles.has(t.id) ? 1 : 0}
+                      onLoad={() => markLoaded(t.id)}
+                      onError={() =>
+                        setMissingTiles((previous) =>
+                          previous.has(t.id) ? previous : new Set([...previous, t.id]),
+                        )
+                      }
+                      aria-hidden="true"
+                    />
+                  ),
+                )}
               {!showingTiles && <rect width={mapWidth} height={mapHeight} fill="url(#county-grid)" />}
               <path
                 d={viewport.path}
@@ -416,7 +461,12 @@ export function CountySiteMap({
           {useGoogle
             ? 'Google Maps'
             : showingTiles
-              ? 'USDA · USGS The National Map'
+              ? [
+                  showingAerial && 'USDA · USGS The National Map',
+                  showingMosaic && 'NASA Blue Marble · Aug 2004',
+                ]
+                  .filter(Boolean)
+                  .join(' / ')
               : viewport.path
                 ? 'Census county boundary'
                 : 'County area'}

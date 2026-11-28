@@ -71,7 +71,8 @@ export async function loadLicenseContacts() {
   return data;
 }
 
-function sourceRef(state: string, key: string): ProviderProfileRef | undefined {
+export function sourceRef(state: string, key: string): ProviderProfileRef | undefined {
+  if (key.startsWith('FDID:' + state + ':')) return { source:'registry', state, id:'usfa:' + key.slice(5) };
   if (key.startsWith('NPI:')) return { source: 'registry', state, id: 'nppes:' + key.slice(4) };
   if (key.startsWith('NERIS:')) return { source: 'neris', state, id: key.slice(6) };
   if (key.startsWith('STATE-EMS:')) return { source: 'state-ems', state, id: key.split(':')[3] };

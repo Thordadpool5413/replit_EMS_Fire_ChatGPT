@@ -1,3 +1,5 @@
+import { savedDepartmentRef } from './matchedWorkspaceFacts';
+import type { Agency } from '../types';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { departmentProfile, departmentAliases } from './departmentIdentity';
@@ -68,4 +70,20 @@ test('county imagery and marker coordinates fit on either side of the internatio
     const [z, y, x] = tile.id.split('/').map(Number);
     assert.ok(x >= 0 && y >= 0 && x < 2 ** z && y < 2 ** z);
   }
+});
+
+test('saved accounts match the same department as the public license and keep generated or cross-state records separate', () => {
+  const cocoa = {
+    stateCode: 'FL',
+    registryIdentity: {
+      sourceName: 'State EMS',
+      identifierKind: 'license',
+      identifier: '518',
+      stateCode: 'FL',
+    },
+    sourceRecordAssociations: [],
+  } as unknown as Agency;
+  assert.deepEqual(savedDepartmentRef(cocoa), { source: 'registry', state: 'FL', id: 'usfa:FL:19052' });
+  assert.equal(savedDepartmentRef({ ...cocoa, stateCode: 'GA' }), undefined);
+  assert.equal(savedDepartmentRef({ ...cocoa, dataProvenanceTier: 'generated_prospect' }), undefined);
 });

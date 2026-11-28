@@ -84,12 +84,13 @@ def build():
     index = {"schemaVersion": 1, "retrievedAt": "2026-11-26", "sourceSha256": digest(raw), "states": {}}
     for n, group in enumerate(shards):
         filename = f"operations-{n}.json.gz"
-        compressed = gzip.compress(json.dumps(group, separators=(",", ":"), ensure_ascii=False).encode(), mtime=0)
+        payload = json.dumps(group, separators=(",", ":"), ensure_ascii=False).encode()
+        compressed = gzip.compress(payload, mtime=0)
         output[filename] = compressed
         for state, rows in group.items():
             index["states"][state] = {
                 "file": filename, "count": len(rows), "sha256": digest(compressed),
-                "directorySha256": directory_hashes[state],
+                "directorySha256": directory_hashes[state], "decodedSha256": digest(payload),
             }
     output["index.json"] = (json.dumps(index, indent=2) + "\n").encode()
     return output, sum(value["count"] for value in index["states"].values())
